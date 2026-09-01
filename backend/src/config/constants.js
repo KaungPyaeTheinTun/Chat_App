@@ -1,0 +1,35 @@
+module.exports = {
+  API_PREFIX: "/api/v1",
+  JWT_EXPIRATION:
+    process.env.JWT_EXPIRATION || process.env.JWT_EXPIRES_IN || "24h",
+  REFRESH_TOKEN_EXPIRATION:
+    process.env.REFRESH_TOKEN_EXPIRATION ||
+    process.env.REFRESH_TOKEN_EXPIRES_IN ||
+    "7d",
+  BCRYPT_ROUNDS: Number(process.env.BCRYPT_ROUNDS || 10),
+  MESSAGE_TYPE: {
+    TEXT: "text",
+    IMAGE: "image",
+  },
+  USER_STATUS: {
+    ONLINE: "online",
+    OFFLINE: "offline",
+  },
+  CACHE_KEYS: {
+    USER_PROFILE: "user:profile:",
+    USER_STATUS: "user:status:",
+    USER_CONVERSATIONS: "user:conversations:",
+    CONVERSATION_MESSAGES: "conversation:messages:",
+    ALL_USERS: "users:all",
+    RATE_LIMIT: "rate_limit:",
+  },
+  CACHE_EXPIRATION: {
+    SHORT: 60,
+    MEDIUM: 300,
+    LONG: 3600,
+  },
+  RATE_LIMIT: {
+    WINDOW_MS: 15 * 60 * 1000,
+    MAX_REQUESTS: 100,
+  },
+};

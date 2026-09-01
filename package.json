@@ -1,0 +1,14 @@
+{
+  "name": "react-native-realtime-chat",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monorepo-style workspace for an Expo chat app and Express Socket.io backend.",
+  "scripts": {
+    "backend:dev": "npm --prefix backend run dev",
+    "backend:start": "npm --prefix backend start",
+    "frontend:start": "npm --prefix frontend start",
+    "frontend:android": "npm --prefix frontend run android",
+    "frontend:ios": "npm --prefix frontend run ios",
+    "frontend:web": "npm --prefix frontend run web"
+  }
+}
