@@ -8,8 +8,14 @@ import {
   View,
 } from "react-native";
 import { useToast } from "../../components/ToastProvider";
-import { colors } from "../../styles/colors";
 import { isEmail } from "../../utils/validators";
+
+const PAGE_BG = "#f6f7fb";
+const CARD_BG = "rgba(255,255,255,0.92)";
+const TEXT = "#17191f";
+const SUBTEXT = "#8b93a5";
+const BLUE = "#3b82f6";
+const BORDER = "#eef1f5";
 
 export default function PasswordResetScreen({ navigation }) {
   const { showError, showSuccess } = useToast();
@@ -25,7 +31,7 @@ export default function PasswordResetScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: PAGE_BG }}>
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
@@ -38,7 +44,7 @@ export default function PasswordResetScreen({ navigation }) {
         <View style={{ alignItems: "center", marginBottom: 18 }}>
           <Text
             style={{
-              color: colors.subtext,
+              color: SUBTEXT,
               fontWeight: "700",
               letterSpacing: 1,
             }}
@@ -48,32 +54,37 @@ export default function PasswordResetScreen({ navigation }) {
           <Text
             style={{
               marginTop: 10,
-              fontSize: 32,
-              fontWeight: "800",
-              color: colors.text,
+              fontSize: 34,
+              fontWeight: "900",
+              color: TEXT,
             }}
           >
             Reset password
+          </Text>
+          <Text style={{ marginTop: 8, color: SUBTEXT }}>
+            Recover access to your account.
           </Text>
         </View>
 
         <View
           style={{
-            backgroundColor: colors.surface,
+            backgroundColor: CARD_BG,
             borderRadius: 34,
             paddingHorizontal: 18,
             paddingVertical: 24,
+            borderWidth: 1,
+            borderColor: "rgba(255,255,255,0.72)",
             shadowColor: "#000000",
-            shadowOpacity: 0.06,
-            shadowRadius: 20,
-            shadowOffset: { width: 0, height: 10 },
-            elevation: 4,
+            shadowOpacity: 0.08,
+            shadowRadius: 24,
+            shadowOffset: { width: 0, height: 14 },
+            elevation: 6,
           }}
         >
           <Text
             style={{
               textAlign: "center",
-              color: colors.subtext,
+              color: SUBTEXT,
               lineHeight: 20,
             }}
           >
@@ -85,14 +96,14 @@ export default function PasswordResetScreen({ navigation }) {
             value={email}
             onChangeText={setEmail}
             placeholder="Email"
-            placeholderTextColor={colors.subtext}
+            placeholderTextColor={SUBTEXT}
             autoCapitalize="none"
             keyboardType="email-address"
             style={inputStyle}
           />
 
           <Pressable onPress={handleReset} style={primaryButton}>
-            <Text style={{ color: colors.white, fontWeight: "800" }}>
+            <Text style={{ color: "#ffffff", fontWeight: "800" }}>
               Send reset link
             </Text>
           </Pressable>
@@ -101,7 +112,7 @@ export default function PasswordResetScreen({ navigation }) {
             onPress={() => navigation.goBack()}
             style={{ marginTop: 18, alignSelf: "center" }}
           >
-            <Text style={{ color: colors.primary, fontWeight: "800" }}>
+            <Text style={{ color: BLUE, fontWeight: "800" }}>
               Back to login
             </Text>
           </Pressable>
@@ -117,9 +128,9 @@ const inputStyle = {
   paddingVertical: 14,
   borderRadius: 999,
   borderWidth: 1,
-  borderColor: colors.border,
-  backgroundColor: colors.white,
-  color: colors.text,
+  borderColor: BORDER,
+  backgroundColor: "rgba(255,255,255,0.78)",
+  color: TEXT,
 };
 
 const primaryButton = {
@@ -127,5 +138,5 @@ const primaryButton = {
   paddingVertical: 15,
   borderRadius: 999,
   alignItems: "center",
-  backgroundColor: colors.primary,
+  backgroundColor: BLUE,
 };

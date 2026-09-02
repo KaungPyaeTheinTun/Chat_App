@@ -2,14 +2,22 @@ import React, { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import UserAvatar from "../../components/UserAvatar";
 import { useToast, getErrorMessage } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
 import { usersApi } from "../../services/api";
-import { colors } from "../../styles/colors";
 
-export default function ProfileScreen() {
-  const { user, logout, updateCurrentUser } = useAuth();
+const PAGE_BG = "#f6f7fb";
+const CARD_BG = "rgba(255,255,255,0.92)";
+const TEXT = "#17191f";
+const SUBTEXT = "#8b93a5";
+const BLUE = "#3b82f6";
+const BORDER = "#eef1f5";
+
+export default function ProfileScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
+  const { user, updateCurrentUser } = useAuth();
   const { showError, showSuccess } = useToast();
   const [username, setUsername] = useState(user?.username || "");
   const [selectedAvatar, setSelectedAvatar] = useState(null);
@@ -81,52 +89,60 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: colors.background }}
+      style={{ flex: 1, backgroundColor: PAGE_BG }}
       contentContainerStyle={{
-        paddingHorizontal: 18,
-        paddingTop: 20,
-        paddingBottom: 30,
+        paddingHorizontal: 20,
+        paddingTop: insets.top + 18,
+        paddingBottom: 34,
       }}
     >
-      <Text
-        style={{ color: colors.subtext, fontWeight: "700", letterSpacing: 1 }}
-      >
-        PROFILE
-      </Text>
-      <Text
-        style={{
-          marginTop: 8,
-          fontSize: 30,
-          fontWeight: "800",
-          color: colors.text,
-        }}
-      >
-        Your account
-      </Text>
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <Pressable onPress={() => navigation.goBack()} style={backButton}>
+          <Ionicons name="chevron-back" size={24} color={TEXT} />
+        </Pressable>
+        <View style={{ marginLeft: 12 }}>
+          <Text style={{ color: TEXT, fontSize: 28, fontWeight: "900" }}>
+            Profile
+          </Text>
+          <Text style={{ marginTop: 4, color: SUBTEXT }}>
+            Update your account details.
+          </Text>
+        </View>
+      </View>
 
       <View
         style={{
-          marginTop: 18,
+          marginTop: 20,
           alignItems: "center",
           padding: 24,
           borderRadius: 28,
-          backgroundColor: colors.surface,
+          backgroundColor: CARD_BG,
+          borderWidth: 1,
+          borderColor: "rgba(255,255,255,0.72)",
+          shadowColor: "#000000",
+          shadowOpacity: 0.06,
+          shadowRadius: 18,
+          shadowOffset: { width: 0, height: 10 },
+          elevation: 4,
         }}
       >
-        <UserAvatar user={previewUser} size={78} />
+        <Pressable onPress={handlePickAvatar}>
+          <UserAvatar user={previewUser} size={88} />
+          <View style={cameraBadge}>
+            <Ionicons name="camera" size={16} color="#ffffff" />
+          </View>
+        </Pressable>
         <Text
           style={{
             marginTop: 14,
             fontSize: 18,
-            fontWeight: "800",
-            color: colors.text,
+            fontWeight: "900",
+            color: TEXT,
           }}
         >
           {user?.username}
         </Text>
-        <Text style={{ marginTop: 6, color: colors.subtext }}>
-          {user?.email}
-        </Text>
+        <Text style={{ marginTop: 6, color: SUBTEXT }}>{user?.email}</Text>
       </View>
 
       <View
@@ -134,10 +150,12 @@ export default function ProfileScreen() {
           marginTop: 18,
           padding: 18,
           borderRadius: 28,
-          backgroundColor: colors.surface,
+          backgroundColor: CARD_BG,
+          borderWidth: 1,
+          borderColor: "rgba(255,255,255,0.72)",
         }}
       >
-        <Text style={{ fontWeight: "800", color: colors.text }}>
+        <Text style={{ fontWeight: "900", color: TEXT, fontSize: 16 }}>
           Edit details
         </Text>
 
@@ -145,12 +163,12 @@ export default function ProfileScreen() {
           value={username}
           onChangeText={setUsername}
           placeholder="Username"
-          placeholderTextColor={colors.subtext}
+          placeholderTextColor={SUBTEXT}
           style={inputStyle}
         />
 
         <Pressable onPress={handlePickAvatar} style={pickerButton}>
-          <Ionicons name="image-outline" size={18} color={colors.primary} />
+          <Ionicons name="image-outline" size={18} color={BLUE} />
           <Text style={pickerButtonText}>
             {selectedAvatar
               ? "Change selected photo"
@@ -165,13 +183,9 @@ export default function ProfileScreen() {
         ) : null}
 
         <Pressable onPress={handleSave} style={primaryButton}>
-          <Text style={{ color: colors.white, fontWeight: "800" }}>
+          <Text style={{ color: "#ffffff", fontWeight: "800" }}>
             {isSaving ? "Saving..." : "Save Profile"}
           </Text>
-        </Pressable>
-
-        <Pressable onPress={logout} style={secondaryButton}>
-          <Text style={{ color: colors.text, fontWeight: "800" }}>Logout</Text>
         </Pressable>
       </View>
     </ScrollView>
@@ -184,9 +198,9 @@ const inputStyle = {
   paddingVertical: 14,
   borderRadius: 999,
   borderWidth: 1,
-  borderColor: colors.border,
-  backgroundColor: colors.background,
-  color: colors.text,
+  borderColor: BORDER,
+  backgroundColor: "rgba(255,255,255,0.78)",
+  color: TEXT,
 };
 
 const pickerButton = {
@@ -195,21 +209,21 @@ const pickerButton = {
   paddingVertical: 14,
   borderRadius: 999,
   borderWidth: 1,
-  borderColor: colors.border,
-  backgroundColor: colors.background,
+  borderColor: BORDER,
+  backgroundColor: "rgba(255,255,255,0.78)",
   flexDirection: "row",
   alignItems: "center",
   gap: 10,
 };
 
 const pickerButtonText = {
-  color: colors.primary,
+  color: BLUE,
   fontWeight: "700",
 };
 
 const selectedText = {
   marginTop: 10,
-  color: colors.subtext,
+  color: SUBTEXT,
   fontSize: 12,
 };
 
@@ -218,13 +232,28 @@ const primaryButton = {
   paddingVertical: 15,
   borderRadius: 999,
   alignItems: "center",
-  backgroundColor: colors.primary,
+  backgroundColor: BLUE,
 };
 
-const secondaryButton = {
-  marginTop: 12,
-  paddingVertical: 15,
-  borderRadius: 999,
+const backButton = {
+  width: 42,
+  height: 42,
+  borderRadius: 21,
   alignItems: "center",
-  backgroundColor: colors.accent,
+  justifyContent: "center",
+  backgroundColor: CARD_BG,
+};
+
+const cameraBadge = {
+  position: "absolute",
+  right: -1,
+  bottom: 1,
+  width: 30,
+  height: 30,
+  borderRadius: 15,
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: BLUE,
+  borderWidth: 3,
+  borderColor: CARD_BG,
 };

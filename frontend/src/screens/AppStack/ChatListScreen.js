@@ -98,7 +98,7 @@ export default function ChatListScreen({ navigation }) {
       contentContainerStyle={{
         paddingHorizontal: 20,
         paddingTop: insets.top + 18,
-        paddingBottom: 30,
+        paddingBottom: 120,
       }}
       refreshControl={
         <RefreshControl refreshing={isLoading} onRefresh={refreshChatData} />

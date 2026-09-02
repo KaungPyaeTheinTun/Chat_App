@@ -40,7 +40,7 @@ export default function PeopleListScreen({ navigation }) {
       contentContainerStyle={{
         paddingHorizontal: 20,
         paddingTop: insets.top + 18,
-        paddingBottom: 30,
+        paddingBottom: 120,
       }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}

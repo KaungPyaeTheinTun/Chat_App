@@ -1,5 +1,7 @@
 import React from "react";
+import { StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import ChatListScreen from "../screens/AppStack/ChatListScreen";
@@ -9,6 +11,7 @@ import CreateGroupScreen from "../screens/AppStack/CreateGroupScreen";
 import PeopleListScreen from "../screens/AppStack/PeopleListScreen";
 import ProfileScreen from "../screens/AppStack/ProfileScreen";
 import SearchScreen from "../screens/AppStack/SearchScreen";
+import SettingsScreen from "../screens/AppStack/SettingsScreen";
 import UserSearchScreen from "../screens/AppStack/UserSearchScreen";
 import { colors } from "../styles/colors";
 
@@ -23,17 +26,44 @@ function MainTabs() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.subtext,
         tabBarStyle: {
-          height: 72,
+          position: "absolute",
+          left: 18,
+          right: 18,
+          bottom: 18,
+          height: 70,
           paddingBottom: 10,
           paddingTop: 10,
           borderTopWidth: 0,
-          backgroundColor: colors.surface,
+          borderRadius: 28,
+          overflow: "hidden",
+          backgroundColor: "transparent",
+          borderWidth: 1,
+          borderColor: "rgba(255,255,255,0.55)",
+          shadowColor: "#000000",
+          shadowOpacity: 0.12,
+          shadowRadius: 20,
+          shadowOffset: { width: 0, height: 10 },
+          elevation: 10,
+        },
+        tabBarBackground: () => (
+          <BlurView
+            tint="light"
+            intensity={65}
+            style={[
+              StyleSheet.absoluteFillObject,
+              { backgroundColor: "rgba(255,255,255,0.34)" },
+            ]}
+          />
+        ),
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: "700",
         },
         tabBarIcon: ({ color, size }) => {
           const icons = {
             Chats: "chatbubble-ellipses-outline",
             People: "people-outline",
-            Profile: "person-circle-outline",
+            Settings: "settings-outline",
           };
           const iconName = icons[route.name] || "ellipse-outline";
 
@@ -43,7 +73,7 @@ function MainTabs() {
     >
       <Tab.Screen name="Chats" component={ChatListScreen} />
       <Tab.Screen name="People" component={PeopleListScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
   );
 }
@@ -86,6 +116,11 @@ export default function AppNavigator() {
       <Stack.Screen
         name="UserSearchScreen"
         component={UserSearchScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ProfileScreen"
+        component={ProfileScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

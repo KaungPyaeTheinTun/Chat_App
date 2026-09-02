@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  Alert,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -12,8 +11,14 @@ import { Ionicons } from "@expo/vector-icons";
 import SocialAuthButton from "../../components/SocialAuthButton";
 import { useToast, getErrorMessage } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
-import { colors } from "../../styles/colors";
 import { isEmail, isRequired, isStrongPassword } from "../../utils/validators";
+
+const PAGE_BG = "#f6f7fb";
+const CARD_BG = "rgba(255,255,255,0.92)";
+const TEXT = "#17191f";
+const SUBTEXT = "#8b93a5";
+const BLUE = "#3b82f6";
+const BORDER = "#eef1f5";
 
 export default function RegisterScreen({ navigation }) {
   const { register } = useAuth();
@@ -55,14 +60,11 @@ export default function RegisterScreen({ navigation }) {
   };
 
   const showSocialPlaceholder = (provider) => {
-    Alert.alert(
-      `${provider} login`,
-      `${provider} social login UI is ready. The OAuth backend can be connected next.`,
-    );
+    showSuccess(`${provider} social login will be available soon.`);
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: PAGE_BG }}>
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
@@ -75,7 +77,7 @@ export default function RegisterScreen({ navigation }) {
         <View style={{ alignItems: "center", marginBottom: 18 }}>
           <Text
             style={{
-              color: colors.subtext,
+              color: SUBTEXT,
               fontWeight: "700",
               letterSpacing: 1,
             }}
@@ -85,40 +87,45 @@ export default function RegisterScreen({ navigation }) {
           <Text
             style={{
               marginTop: 10,
-              fontSize: 32,
-              fontWeight: "800",
-              color: colors.text,
+              fontSize: 34,
+              fontWeight: "900",
+              color: TEXT,
             }}
           >
-            Sign up
+            Create account
+          </Text>
+          <Text style={{ marginTop: 8, color: SUBTEXT }}>
+            Start chatting with your people.
           </Text>
         </View>
 
         <View
           style={{
-            backgroundColor: colors.surface,
+            backgroundColor: CARD_BG,
             borderRadius: 34,
             paddingHorizontal: 18,
             paddingVertical: 24,
+            borderWidth: 1,
+            borderColor: "rgba(255,255,255,0.72)",
             shadowColor: "#000000",
-            shadowOpacity: 0.06,
-            shadowRadius: 20,
-            shadowOffset: { width: 0, height: 10 },
-            elevation: 4,
+            shadowOpacity: 0.08,
+            shadowRadius: 24,
+            shadowOffset: { width: 0, height: 14 },
+            elevation: 6,
           }}
         >
           <TextInput
             value={form.username}
             onChangeText={(text) => updateField("username", text)}
             placeholder="Username"
-            placeholderTextColor={colors.subtext}
+            placeholderTextColor={SUBTEXT}
             style={inputStyle}
           />
           <TextInput
             value={form.email}
             onChangeText={(text) => updateField("email", text)}
             placeholder="Email"
-            placeholderTextColor={colors.subtext}
+            placeholderTextColor={SUBTEXT}
             autoCapitalize="none"
             keyboardType="email-address"
             style={inputStyle}
@@ -128,7 +135,7 @@ export default function RegisterScreen({ navigation }) {
               value={form.password}
               onChangeText={(text) => updateField("password", text)}
               placeholder="Password"
-              placeholderTextColor={colors.subtext}
+              placeholderTextColor={SUBTEXT}
               secureTextEntry={!showPassword}
               style={passwordInputStyle}
             />
@@ -136,13 +143,13 @@ export default function RegisterScreen({ navigation }) {
               <Ionicons
                 name={showPassword ? "eye-off-outline" : "eye-outline"}
                 size={20}
-                color={colors.subtext}
+                color={SUBTEXT}
               />
             </Pressable>
           </View>
 
           <Pressable onPress={handleRegister} style={primaryButton}>
-            <Text style={{ color: colors.white, fontWeight: "800" }}>
+            <Text style={{ color: "#ffffff", fontWeight: "800" }}>
               {isSubmitting ? "Creating..." : "Create account"}
             </Text>
           </Pressable>
@@ -158,7 +165,7 @@ export default function RegisterScreen({ navigation }) {
             <Text
               style={{
                 marginHorizontal: 12,
-                color: colors.subtext,
+                color: SUBTEXT,
                 fontWeight: "700",
               }}
             >
@@ -183,11 +190,9 @@ export default function RegisterScreen({ navigation }) {
             onPress={() => navigation.goBack()}
             style={{ marginTop: 18, alignSelf: "center" }}
           >
-            <Text style={{ color: colors.subtext, fontSize: 13 }}>
+            <Text style={{ color: SUBTEXT, fontSize: 13 }}>
               Already have an account?{" "}
-              <Text style={{ color: colors.primary, fontWeight: "800" }}>
-                Login
-              </Text>
+              <Text style={{ color: BLUE, fontWeight: "800" }}>Login</Text>
             </Text>
           </Pressable>
         </View>
@@ -202,9 +207,9 @@ const inputStyle = {
   paddingVertical: 14,
   borderRadius: 999,
   borderWidth: 1,
-  borderColor: colors.border,
-  backgroundColor: colors.white,
-  color: colors.text,
+  borderColor: BORDER,
+  backgroundColor: "rgba(255,255,255,0.78)",
+  color: TEXT,
 };
 
 const passwordWrapStyle = {
@@ -212,9 +217,9 @@ const passwordWrapStyle = {
   paddingHorizontal: 18,
   borderRadius: 999,
   borderWidth: 1,
-  borderColor: colors.border,
-  backgroundColor: colors.white,
-  color: colors.text,
+  borderColor: BORDER,
+  backgroundColor: "rgba(255,255,255,0.78)",
+  color: TEXT,
   flexDirection: "row",
   alignItems: "center",
 };
@@ -222,7 +227,7 @@ const passwordWrapStyle = {
 const passwordInputStyle = {
   flex: 1,
   paddingVertical: 14,
-  color: colors.text,
+  color: TEXT,
 };
 
 const primaryButton = {
@@ -230,11 +235,11 @@ const primaryButton = {
   paddingVertical: 15,
   borderRadius: 999,
   alignItems: "center",
-  backgroundColor: colors.primary,
+  backgroundColor: BLUE,
 };
 
 const dividerLine = {
   flex: 1,
   height: 1,
-  backgroundColor: colors.border,
+  backgroundColor: BORDER,
 };
