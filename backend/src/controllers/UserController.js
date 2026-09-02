@@ -78,6 +78,17 @@ class UserController extends BaseController {
         status: user.status,
       });
     });
+
+    this.registerDeviceToken = this.handleRequest(async (req, res) => {
+      const token = await this.userService.registerDeviceToken(
+        req.user.userId,
+        req.body,
+      );
+
+      return this.ok(res, "Device token registered successfully.", {
+        deviceTokenId: token.device_token_id,
+      });
+    });
   }
 }
 

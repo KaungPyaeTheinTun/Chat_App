@@ -1,7 +1,8 @@
 class MessageHandler {
-  constructor({ roomManager, messageService }) {
+  constructor({ roomManager, messageService, cacheService }) {
     this.roomManager = roomManager;
     this.messageService = messageService;
+    this.cacheService = cacheService;
   }
 
   register(socket) {
@@ -17,8 +18,13 @@ class MessageHandler {
       }
     });
 
-    socket.on("typing:start", ({ conversationId }) => {
+    socket.on("typing:start", async ({ conversationId }) => {
       if (conversationId) {
+        await this.cacheService.set(
+          `typing:${conversationId}:${socket.auth.userId}`,
+          true,
+          5,
+        );
         socket
           .to(this.roomManager.conversationRoom(conversationId))
           .emit("typing:start", {
@@ -28,8 +34,11 @@ class MessageHandler {
       }
     });
 
-    socket.on("typing:stop", ({ conversationId }) => {
+    socket.on("typing:stop", async ({ conversationId }) => {
       if (conversationId) {
+        await this.cacheService.del(
+          `typing:${conversationId}:${socket.auth.userId}`,
+        );
         socket
           .to(this.roomManager.conversationRoom(conversationId))
           .emit("typing:stop", {
@@ -43,10 +52,26 @@ class MessageHandler {
       try {
         const result = await this.messageService.sendMessage({
           senderId: socket.auth.userId,
-          receiverId: Number(payload.receiverId),
+          receiverId: payload.receiverId ? Number(payload.receiverId) : null,
+          conversationId: payload.conversationId
+            ? Number(payload.conversationId)
+            : null,
           content: payload.content,
           messageType: payload.messageType,
+          clientMessageId: payload.clientMessageId,
         });
+        callback?.({ success: true, data: result });
+      } catch (error) {
+        callback?.({ success: false, message: error.message });
+      }
+    });
+
+    socket.on("message:delivered", async ({ conversationId }, callback) => {
+      try {
+        const result = await this.messageService.markConversationDelivered(
+          socket.auth.userId,
+          Number(conversationId),
+        );
         callback?.({ success: true, data: result });
       } catch (error) {
         callback?.({ success: false, message: error.message });

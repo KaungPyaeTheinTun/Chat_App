@@ -8,6 +8,7 @@ class User {
     this.password = data.password || null;
     this.avatarUrl = data.avatar_url || data.avatarUrl || null;
     this.status = data.status || "offline";
+    this.lastSeenAt = data.last_seen_at || data.lastSeenAt || null;
     this.createdAt = data.created_at || data.createdAt || null;
     this.updatedAt = data.updated_at || data.updatedAt || null;
   }
@@ -39,6 +40,7 @@ class User {
       email: this.email,
       avatarUrl: this.avatarUrl,
       status: this.status,
+      lastSeenAt: this.lastSeenAt,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };

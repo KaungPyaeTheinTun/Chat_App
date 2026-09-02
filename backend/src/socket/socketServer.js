@@ -24,6 +24,7 @@ const buildSocketServer = (httpServer, services) => {
   const messageHandler = new MessageHandler({
     roomManager,
     messageService: services.messageService,
+    cacheService: services.cacheService,
   });
   const presenceHandler = new PresenceHandler({
     connectionManager,

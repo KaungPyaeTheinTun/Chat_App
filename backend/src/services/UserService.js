@@ -2,11 +2,12 @@ const fs = require("fs/promises");
 const path = require("path");
 const BaseService = require("./base/BaseService");
 const User = require("../models/entities/User");
+const ValidationException = require("../exceptions/ValidationException");
 
 const uploadsRoot = path.join(__dirname, "..", "..", "uploads");
 
 class UserService extends BaseService {
-  constructor({ userRepository, cacheService, logger }) {
+  constructor({ userRepository, deviceTokenRepository, cacheService, logger }) {
     super({
       repository: userRepository,
       entityClass: User,
@@ -15,6 +16,7 @@ class UserService extends BaseService {
       notFoundMessage: "User not found.",
     });
     this.userRepository = userRepository;
+    this.deviceTokenRepository = deviceTokenRepository;
   }
 
   async getUserById(userId) {
@@ -69,6 +71,19 @@ class UserService extends BaseService {
     const user = this.serialize(updated);
     await this.cacheService.set(this.cacheService.userProfileKey(userId), user);
     return user;
+  }
+
+  async registerDeviceToken(userId, { token, platform, deviceId = null }) {
+    if (!token || !platform) {
+      throw new ValidationException("Device token and platform are required.");
+    }
+
+    return this.deviceTokenRepository.upsert({
+      userId,
+      token,
+      platform,
+      deviceId,
+    });
   }
 }
 

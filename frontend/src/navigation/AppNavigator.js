@@ -4,7 +4,12 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import ChatListScreen from "../screens/AppStack/ChatListScreen";
 import ChatScreen from "../screens/AppStack/ChatScreen";
+import ConversationProfileScreen from "../screens/AppStack/ConversationProfileScreen";
+import CreateGroupScreen from "../screens/AppStack/CreateGroupScreen";
+import PeopleListScreen from "../screens/AppStack/PeopleListScreen";
 import ProfileScreen from "../screens/AppStack/ProfileScreen";
+import SearchScreen from "../screens/AppStack/SearchScreen";
+import UserSearchScreen from "../screens/AppStack/UserSearchScreen";
 import { colors } from "../styles/colors";
 
 const Tab = createBottomTabNavigator();
@@ -25,16 +30,19 @@ function MainTabs() {
           backgroundColor: colors.surface,
         },
         tabBarIcon: ({ color, size }) => {
-          const iconName =
-            route.name === "Chats"
-              ? "chatbubble-ellipses-outline"
-              : "person-circle-outline";
+          const icons = {
+            Chats: "chatbubble-ellipses-outline",
+            People: "people-outline",
+            Profile: "person-circle-outline",
+          };
+          const iconName = icons[route.name] || "ellipse-outline";
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
       })}
     >
       <Tab.Screen name="Chats" component={ChatListScreen} />
+      <Tab.Screen name="People" component={PeopleListScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
@@ -58,6 +66,26 @@ export default function AppNavigator() {
       <Stack.Screen
         name="ChatScreen"
         component={ChatScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SearchScreen"
+        component={SearchScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ConversationProfileScreen"
+        component={ConversationProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="CreateGroupScreen"
+        component={CreateGroupScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="UserSearchScreen"
+        component={UserSearchScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
   Animated,
   FlatList,
   Image,
@@ -15,8 +14,9 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurTargetView, BlurView } from "expo-blur";
+import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import ConfirmationModal from "../../components/ConfirmationModal";
 import MessageBubble from "../../components/MessageBubble";
 import MessageInput from "../../components/MessageInput";
 import TypingIndicator from "../../components/TypingIndicator";
@@ -27,13 +27,7 @@ import { useChat } from "../../context/ChatContext";
 import { colors } from "../../styles/colors";
 import { resolveMediaUrl } from "../../utils/media";
 
-const MENU_WIDTH = 252;
-const REACTION_BAR_HEIGHT = 54;
-const ACTION_ROW_HEIGHT = 54;
-const MENU_GAP = 12;
-const STACK_GAP = 12;
-const STACK_SIDE_PADDING = 16;
-const REACTIONS = ["👍", "👎", "❤️", "🔥", "👏", "😮"];
+const REACTIONS = ["🔥", "🙌", "😭", "🙈", "🙏", "😬", "✨", "＋"];
 const CHAT_BG = "#f4f6fb";
 const CHAT_ICON = "#7a8292";
 
@@ -45,23 +39,34 @@ export default function ChatScreen({ route, navigation }) {
   const {
     activeConversation,
     activeMessages,
+    activePagination,
     typingUsers,
+    loadOlderMessages,
     sendMessage,
     sendImageMessage,
+    retryMessage,
     editMessage,
     deleteMessage,
     startTyping,
     stopTyping,
   } = useChat();
+
   const peerUser = activeConversation?.otherUser || route.params?.peerUser;
-  const blurTargetRef = useRef(null);
+  const conversationTitle =
+    activeConversation?.conversationType === "group"
+      ? activeConversation?.title || "Group chat"
+      : peerUser?.username;
+  const conversationAvatar =
+    activeConversation?.conversationType === "group"
+      ? {
+          username: conversationTitle,
+          avatarUrl: activeConversation?.avatarUrl,
+        }
+      : peerUser;
   const typingTimeoutRef = useRef(null);
   const composerTranslateY = useRef(new Animated.Value(0)).current;
-  const overlayOpacity = useRef(new Animated.Value(0)).current;
-  const focusedMessageScale = useRef(new Animated.Value(0.94)).current;
-  const focusedMessageTranslateY = useRef(new Animated.Value(18)).current;
-  const sheetTranslateY = useRef(new Animated.Value(14)).current;
   const [selectedMessage, setSelectedMessage] = useState(null);
+  const [confirmation, setConfirmation] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [viewerImage, setViewerImage] = useState(null);
   const [composerValue, setComposerValue] = useState("");
@@ -111,46 +116,15 @@ export default function ChatScreen({ route, navigation }) {
     };
   }, [composerTranslateY, insets.bottom]);
 
-  useEffect(() => {
-    if (!selectedMessage) {
-      return;
-    }
-
-    Animated.parallel([
-      Animated.timing(overlayOpacity, {
-        toValue: 1,
-        duration: 180,
-        useNativeDriver: true,
-      }),
-      Animated.spring(focusedMessageScale, {
-        toValue: 1,
-        useNativeDriver: true,
-        damping: 16,
-        stiffness: 180,
-        mass: 0.9,
-      }),
-      Animated.spring(focusedMessageTranslateY, {
-        toValue: 0,
-        useNativeDriver: true,
-        damping: 16,
-        stiffness: 180,
-        mass: 0.9,
-      }),
-      Animated.spring(sheetTranslateY, {
-        toValue: 0,
-        useNativeDriver: true,
-        damping: 16,
-        stiffness: 180,
-        mass: 0.9,
-      }),
-    ]).start();
-  }, [
-    focusedMessageScale,
-    focusedMessageTranslateY,
-    overlayOpacity,
-    selectedMessage,
-    sheetTranslateY,
-  ]);
+  const closeMessageMenu = () => setSelectedMessage(null);
+  const closeImageViewer = () => setViewerImage(null);
+  const openImageViewer = (_message, imageUri) => setViewerImage(imageUri);
+  const openConversationProfile = () => {
+    navigation.navigate("ConversationProfileScreen", {
+      conversationId: activeConversation?.conversationId,
+      peerUser,
+    });
+  };
 
   const handleTyping = (text) => {
     setComposerValue(text);
@@ -178,10 +152,6 @@ export default function ChatScreen({ route, navigation }) {
     stopTyping(activeConversation?.conversationId);
   };
 
-  const closeMessageMenu = () => setSelectedMessage(null);
-  const closeImageViewer = () => setViewerImage(null);
-  const openImageViewer = (_message, imageUri) => setViewerImage(imageUri);
-
   const handlePrimaryAction = async () => {
     const content = composerValue.trim();
 
@@ -195,7 +165,8 @@ export default function ChatScreen({ route, navigation }) {
         showSuccess("Message updated.");
       } else {
         await sendMessage({
-          receiverId: peerUser.userId,
+          receiverId: peerUser?.userId,
+          conversationId: activeConversation?.conversationId,
           content,
           messageType: "text",
         });
@@ -239,7 +210,8 @@ export default function ChatScreen({ route, navigation }) {
 
     try {
       await sendImageMessage({
-        receiverId: peerUser.userId,
+        receiverId: peerUser?.userId,
+        conversationId: activeConversation?.conversationId,
         asset: result.assets[0],
       });
     } catch (error) {
@@ -248,27 +220,21 @@ export default function ChatScreen({ route, navigation }) {
   };
 
   const openMessageMenu = (message, isMine, nativeEvent) => {
-    if (!message) {
-      return;
-    }
-
-    overlayOpacity.setValue(0);
-    focusedMessageScale.setValue(0.94);
-    focusedMessageTranslateY.setValue(18);
-    sheetTranslateY.setValue(14);
-
     setSelectedMessage({
       message,
       isMine,
-      bubbleX: nativeEvent.bubbleX,
-      bubbleY: nativeEvent.bubbleY,
-      bubbleWidth: nativeEvent.bubbleWidth,
-      bubbleHeight: nativeEvent.bubbleHeight,
+      anchorY: nativeEvent?.pageY || height * 0.48,
     });
   };
 
   const beginEdit = () => {
     if (!selectedMessage?.message) {
+      return;
+    }
+
+    if (!selectedMessage.isMine) {
+      closeMessageMenu();
+      showError("You can only edit your own messages.");
       return;
     }
 
@@ -282,28 +248,30 @@ export default function ChatScreen({ route, navigation }) {
       return;
     }
 
+    if (!selectedMessage.isMine) {
+      closeMessageMenu();
+      showError("You can only delete your own messages.");
+      return;
+    }
+
     const messageToDelete = selectedMessage.message;
     closeMessageMenu();
 
-    Alert.alert(
-      "Delete message",
-      "Are you sure you want to delete this message?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await deleteMessage(messageToDelete.messageId);
-              showSuccess("Message deleted.");
-            } catch (error) {
-              showError(getErrorMessage(error, "Unable to delete message."));
-            }
-          },
-        },
-      ],
-    );
+    setConfirmation({
+      title: "Delete message",
+      message: "Are you sure you want to delete this message?",
+      confirmLabel: "Delete",
+      icon: "trash-outline",
+      onConfirm: async () => {
+        setConfirmation(null);
+        try {
+          await deleteMessage(messageToDelete.messageId);
+          showSuccess("Message deleted.");
+        } catch (error) {
+          showError(getErrorMessage(error, "Unable to delete message."));
+        }
+      },
+    });
   };
 
   const openSelectedImage = () => {
@@ -325,6 +293,11 @@ export default function ChatScreen({ route, navigation }) {
     showSuccess(`${reaction} reactions will be available soon.`);
   };
 
+  const handlePendingAction = (label) => {
+    closeMessageMenu();
+    showSuccess(`${label} will be available soon.`);
+  };
+
   const menuActions = useMemo(() => {
     if (!selectedMessage?.message) {
       return [];
@@ -342,88 +315,54 @@ export default function ChatScreen({ route, navigation }) {
       });
     }
 
-    if (
-      selectedMessage.isMine &&
-      selectedMessage.message.messageType !== "image"
-    ) {
+    if (selectedMessage.message.messageType !== "image") {
       actions.push({
         key: "edit",
-        label: "Edit message",
+        label: "Edit",
         icon: "create-outline",
         color: colors.text,
         onPress: beginEdit,
       });
     }
 
-    if (selectedMessage.isMine) {
-      actions.push({
-        key: "delete",
-        label: "Delete message",
-        icon: "trash-outline",
-        color: colors.danger,
-        onPress: confirmDelete,
-      });
-    }
+    actions.push(
+      {
+        key: "copy",
+        label: "Copy",
+        icon: "copy-outline",
+        color: colors.text,
+        onPress: () => handlePendingAction("Copy"),
+      },
+      {
+        key: "reply",
+        label: "Reply",
+        icon: "return-up-back-outline",
+        color: colors.text,
+        onPress: () => handlePendingAction("Reply"),
+      },
+      {
+        key: "forward",
+        label: "Forward",
+        icon: "arrow-redo-outline",
+        color: colors.text,
+        onPress: () => handlePendingAction("Forward"),
+      },
+    );
+
+    actions.push({
+      key: "delete",
+      label: "Delete",
+      icon: "trash-outline",
+      color: colors.danger,
+      onPress: confirmDelete,
+    });
 
     return actions;
   }, [selectedMessage]);
 
-  const focusedLayout = useMemo(() => {
-    if (!selectedMessage) {
-      return null;
-    }
-
-    const bubbleWidth = selectedMessage.bubbleWidth || MENU_WIDTH;
-    const bubbleHeight = selectedMessage.bubbleHeight || 0;
-    const actionsHeight = menuActions.length * ACTION_ROW_HEIGHT;
-    const stackHeight =
-      REACTION_BAR_HEIGHT +
-      STACK_GAP +
-      bubbleHeight +
-      (menuActions.length ? MENU_GAP + actionsHeight : 0);
-
-    const desiredTop =
-      (selectedMessage.bubbleY || 0) - REACTION_BAR_HEIGHT - STACK_GAP;
-    const top = Math.min(
-      Math.max(insets.top + 16, desiredTop),
-      height - stackHeight - Math.max(insets.bottom, 24),
-    );
-
-    const bubbleLeft = Math.min(
-      Math.max(
-        STACK_SIDE_PADDING,
-        selectedMessage.bubbleX || STACK_SIDE_PADDING,
-      ),
-      width - bubbleWidth - STACK_SIDE_PADDING,
-    );
-    const sheetLeft = selectedMessage.isMine
-      ? Math.max(STACK_SIDE_PADDING, bubbleLeft + bubbleWidth - MENU_WIDTH)
-      : Math.min(
-          Math.max(STACK_SIDE_PADDING, bubbleLeft),
-          width - MENU_WIDTH - STACK_SIDE_PADDING,
-        );
-
-    return {
-      top,
-      bubbleLeft,
-      bubbleWidth,
-      sheetLeft,
-      reactionTop: 0,
-      bubbleTop: REACTION_BAR_HEIGHT + STACK_GAP,
-      actionTop: REACTION_BAR_HEIGHT + STACK_GAP + bubbleHeight + MENU_GAP,
-    };
-  }, [
-    height,
-    insets.bottom,
-    insets.top,
-    menuActions.length,
-    selectedMessage,
-    width,
-  ]);
-
   return (
     <View style={{ flex: 1, backgroundColor: CHAT_BG }}>
-      <BlurTargetView ref={blurTargetRef} style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
         <View
           style={{
             paddingTop: insets.top + 6,
@@ -449,15 +388,21 @@ export default function ChatScreen({ route, navigation }) {
               <Ionicons name="chevron-back" size={24} color="#17191f" />
             </Pressable>
 
-            <UserAvatar user={peerUser} size={42} />
+            <Pressable onPress={openConversationProfile}>
+              <UserAvatar user={conversationAvatar} size={42} />
+            </Pressable>
             <View style={{ marginLeft: 12, flex: 1 }}>
               <Text
                 style={{ fontSize: 17, fontWeight: "700", color: "#17191f" }}
               >
-                {peerUser?.username}
+                {conversationTitle}
               </Text>
               <Text style={{ marginTop: 3, color: CHAT_ICON, fontSize: 12 }}>
-                {peerUser?.status === "online" ? "Active now" : "Offline"}
+                {activeConversation?.conversationType === "group"
+                  ? `${activeConversation?.members?.length || 0} members`
+                  : peerUser?.status === "online"
+                    ? "Active now"
+                    : "Offline"}
               </Text>
             </View>
 
@@ -485,11 +430,35 @@ export default function ChatScreen({ route, navigation }) {
           renderItem={({ item }) => (
             <MessageBubble
               message={item}
-              isMine={item.senderId === user.userId}
+              isMine={item.senderId === user?.userId}
               onPressImage={openImageViewer}
+              onRetry={retryMessage}
               onLongPress={openMessageMenu}
             />
           )}
+          ListHeaderComponent={
+            activePagination?.hasMore ? (
+              <Pressable
+                onPress={() =>
+                  loadOlderMessages(activeConversation.conversationId)
+                }
+                style={{
+                  alignSelf: "center",
+                  marginBottom: 10,
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  borderRadius: 16,
+                  backgroundColor: "#ffffff",
+                  borderWidth: 1,
+                  borderColor: "#edf1f6",
+                }}
+              >
+                <Text style={{ color: CHAT_ICON, fontWeight: "700" }}>
+                  Load older messages
+                </Text>
+              </Pressable>
+            ) : null
+          }
           ListEmptyComponent={
             <View
               style={{
@@ -548,7 +517,7 @@ export default function ChatScreen({ route, navigation }) {
             />
           </View>
         </Animated.View>
-      </BlurTargetView>
+      </View>
 
       <Modal
         visible={Boolean(viewerImage)}
@@ -607,157 +576,130 @@ export default function ChatScreen({ route, navigation }) {
         </View>
       </Modal>
 
-      {selectedMessage && focusedLayout ? (
-        <View
+      <Modal
+        visible={Boolean(selectedMessage)}
+        transparent
+        animationType="fade"
+        onRequestClose={closeMessageMenu}
+      >
+        <BlurView
+          tint="light"
+          intensity={55}
+          style={StyleSheet.absoluteFillObject}
+        />
+        <Pressable
+          onPress={closeMessageMenu}
           style={{
-            ...StyleSheet.absoluteFillObject,
-            zIndex: 100,
-            elevation: 100,
+            flex: 1,
+            justifyContent: "flex-end",
+            backgroundColor: "rgba(0,0,0,0.12)",
           }}
         >
-          <Animated.View
-            style={{
-              ...StyleSheet.absoluteFillObject,
-              opacity: overlayOpacity,
-            }}
-          >
-            <BlurView
-              tint="light"
-              intensity={100}
-              blurTarget={blurTargetRef}
-              blurMethod="dimezisBlurView"
-              style={StyleSheet.absoluteFillObject}
-            />
-            <View
-              style={{
-                ...StyleSheet.absoluteFillObject,
-                backgroundColor: "rgba(255,255,255,0.22)",
-              }}
-            />
-          </Animated.View>
-
-          <Pressable
-            onPress={closeMessageMenu}
-            style={StyleSheet.absoluteFillObject}
-          >
-            <View />
-          </Pressable>
-
           <View
-            pointerEvents="box-none"
+            onStartShouldSetResponder={() => true}
             style={{
-              position: "absolute",
-              top: focusedLayout.top,
-              left: 0,
-              right: 0,
+              marginHorizontal: 28,
+              marginBottom: Math.max(insets.bottom + 10, 24),
+              borderRadius: 26,
+              overflow: "hidden",
+              backgroundColor: "#ffffff",
+              shadowColor: "#000000",
+              shadowOpacity: 0.2,
+              shadowRadius: 30,
+              shadowOffset: { width: 0, height: 18 },
+              elevation: 14,
             }}
           >
-            <Animated.View
-              style={{
-                position: "absolute",
-                top: focusedLayout.reactionTop,
-                left: focusedLayout.sheetLeft,
-                width: MENU_WIDTH,
-                opacity: overlayOpacity,
-                transform: [{ translateY: sheetTranslateY }],
-              }}
-            >
-              <View style={reactionShadow}>
-                <BlurView
-                  tint="extraLight"
-                  intensity={95}
-                  blurTarget={blurTargetRef}
-                  blurMethod="dimezisBlurView"
-                  style={reactionBar}
+            {selectedMessage?.message ? (
+              <View style={{ paddingHorizontal: 14, paddingTop: 14 }}>
+                <View
+                  style={{
+                    alignSelf: selectedMessage.isMine
+                      ? "flex-end"
+                      : "flex-start",
+                    maxWidth: "96%",
+                    paddingHorizontal: 14,
+                    paddingVertical: 12,
+                    borderRadius: 16,
+                    backgroundColor: "#f5f6f8",
+                  }}
                 >
-                  {REACTIONS.map((reaction) => (
-                    <Pressable
-                      key={reaction}
-                      onPress={() => handleReactionPress(reaction)}
-                      style={reactionButton}
-                    >
-                      <Text style={reactionText}>{reaction}</Text>
-                    </Pressable>
-                  ))}
-                </BlurView>
+                  <Text
+                    numberOfLines={3}
+                    style={{
+                      color: "#17191f",
+                      lineHeight: 19,
+                      fontWeight: "500",
+                    }}
+                  >
+                    {selectedMessage.message.messageType === "image"
+                      ? "Image message"
+                      : selectedMessage.message.content}
+                  </Text>
+                </View>
               </View>
-            </Animated.View>
+            ) : null}
 
-            <Animated.View
-              pointerEvents="none"
-              style={{
-                position: "absolute",
-                top: focusedLayout.bubbleTop,
-                left: focusedLayout.bubbleLeft,
-                width: focusedLayout.bubbleWidth,
-                opacity: overlayOpacity,
-                transform: [
-                  { translateY: focusedMessageTranslateY },
-                  { scale: focusedMessageScale },
-                ],
-              }}
-            >
-              <MessageBubble
-                message={selectedMessage.message}
-                isMine={selectedMessage.isMine}
-                interactive={false}
-                containerStyle={{
-                  marginVertical: 0,
-                  paddingHorizontal: 0,
-                }}
-                bubbleStyle={{
-                  maxWidth: "100%",
-                  shadowOpacity: 0.18,
-                  shadowRadius: 24,
-                  shadowOffset: { width: 0, height: 14 },
-                  elevation: 10,
-                }}
-              />
-            </Animated.View>
-
-            {menuActions.length ? (
-              <Animated.View
+            <View style={{ paddingHorizontal: 14, paddingTop: 14 }}>
+              <Text
                 style={{
-                  position: "absolute",
-                  top: focusedLayout.actionTop,
-                  left: focusedLayout.sheetLeft,
-                  width: MENU_WIDTH,
-                  opacity: overlayOpacity,
-                  transform: [{ translateY: sheetTranslateY }],
+                  color: "#2d3038",
+                  fontSize: 13,
+                  fontWeight: "800",
                 }}
               >
-                <View style={menuShadow}>
-                  <BlurView
-                    tint="extraLight"
-                    intensity={98}
-                    blurTarget={blurTargetRef}
-                    blurMethod="dimezisBlurView"
-                    style={actionCard}
+                React
+              </Text>
+              <View
+                style={{
+                  marginTop: 10,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                {REACTIONS.map((reaction) => (
+                  <Pressable
+                    key={reaction}
+                    onPress={() => handleReactionPress(reaction)}
+                    style={sheetReactionButton}
                   >
-                    {menuActions.map((action, index) => (
-                      <View key={action.key}>
-                        <Pressable onPress={action.onPress} style={menuItem}>
-                          <Text style={[menuText, { color: action.color }]}>
-                            {action.label}
-                          </Text>
-                          <Ionicons
-                            name={action.icon}
-                            size={18}
-                            color={action.color}
-                          />
-                        </Pressable>
-                        {index < menuActions.length - 1 ? (
-                          <View style={menuDivider} />
-                        ) : null}
-                      </View>
-                    ))}
-                  </BlurView>
-                </View>
-              </Animated.View>
-            ) : null}
+                    <Text style={sheetReactionText}>{reaction}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            <View style={{ marginTop: 6 }}>
+              <View style={menuDivider} />
+            </View>
+            {menuActions.map((action, index) => (
+              <View key={action.key}>
+                <Pressable onPress={action.onPress} style={menuItem}>
+                  <Text style={[menuText, { color: action.color }]}>
+                    {action.label}
+                  </Text>
+                  <Ionicons name={action.icon} size={20} color={action.color} />
+                </Pressable>
+                {index < menuActions.length - 1 ? (
+                  <View style={menuDivider} />
+                ) : null}
+              </View>
+            ))}
           </View>
-        </View>
-      ) : null}
+        </Pressable>
+      </Modal>
+
+      <ConfirmationModal
+        visible={Boolean(confirmation)}
+        title={confirmation?.title}
+        message={confirmation?.message}
+        confirmLabel={confirmation?.confirmLabel}
+        danger
+        icon={confirmation?.icon}
+        onConfirm={confirmation?.onConfirm}
+        onCancel={() => setConfirmation(null)}
+      />
     </View>
   );
 }
@@ -781,38 +723,15 @@ const menuDivider = {
   backgroundColor: "rgba(60,60,67,0.14)",
 };
 
-const reactionShadow = {
-  borderRadius: 28,
-  overflow: "hidden",
-  shadowColor: "#000000",
-  shadowOpacity: 0.16,
-  shadowRadius: 22,
-  shadowOffset: { width: 0, height: 12 },
-  elevation: 10,
-};
-
-const reactionBar = {
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "space-between",
-  paddingHorizontal: 10,
-  height: REACTION_BAR_HEIGHT,
-  borderRadius: 28,
-  backgroundColor: "rgba(255,255,255,0.82)",
-  borderWidth: 1,
-  borderColor: "rgba(255,255,255,0.75)",
-};
-
-const reactionButton = {
-  width: 34,
-  height: 34,
-  borderRadius: 17,
+const sheetReactionButton = {
+  width: 28,
+  height: 32,
   alignItems: "center",
   justifyContent: "center",
 };
 
-const reactionText = {
-  fontSize: 22,
+const sheetReactionText = {
+  fontSize: 21,
 };
 
 const headerIconShell = {
@@ -822,21 +741,4 @@ const headerIconShell = {
   alignItems: "center",
   justifyContent: "center",
   backgroundColor: "#f6f7fb",
-};
-
-const menuShadow = {
-  borderRadius: 20,
-  overflow: "hidden",
-  shadowColor: "#000000",
-  shadowOpacity: 0.16,
-  shadowRadius: 24,
-  shadowOffset: { width: 0, height: 16 },
-  elevation: 10,
-};
-
-const actionCard = {
-  borderRadius: 20,
-  backgroundColor: "rgba(255,255,255,0.84)",
-  borderWidth: 1,
-  borderColor: "rgba(255,255,255,0.74)",
 };

@@ -10,36 +10,71 @@ const createService = (overrides = {}) => {
   const service = new MessageService({
     database: {
       withTransaction: async (callback) => callback({}),
+      query: async () => [],
     },
     messageRepository: {
+      findByClientMessageId: async () => null,
       create: async (payload) => ({
         message_id: 77,
+        client_message_id: payload.client_message_id,
         conversation_id: 11,
         sender_id: payload.sender_id,
         receiver_id: payload.receiver_id,
         content: payload.content,
         message_type: payload.message_type,
-        is_read: false,
+        delivery_state: payload.delivery_state,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }),
-      findById: async () => null,
+      findById: async (messageId) => ({
+        message_id: messageId,
+        client_message_id: "client-1",
+        conversation_id: 11,
+        sender_id: 1,
+        receiver_id: 2,
+        content: "hello",
+        message_type: "text",
+        delivery_state: "sent",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }),
       findLatestByConversation: async () => null,
-      markConversationRead: async () => undefined,
       ...overrides.messageRepository,
     },
     conversationRepository: {
       getOrCreate: async () => ({
         conversation_id: 11,
+        conversation_type: "direct",
       }),
       findById: async () => ({
         conversation_id: 11,
-        participant_1_id: 1,
-        participant_2_id: 2,
+        conversation_type: "direct",
       }),
       updateLastMessage: async () => undefined,
       update: async () => undefined,
       ...overrides.conversationRepository,
+    },
+    conversationMemberRepository: {
+      findByConversationAndUser: async () => ({
+        conversation_id: 11,
+        user_id: 1,
+        left_at: null,
+        is_deleted: false,
+      }),
+      listActiveMemberIds: async () => [1, 2],
+      markRead: async () => undefined,
+      ...overrides.conversationMemberRepository,
+    },
+    messageReceiptRepository: {
+      createForRecipients: async () => undefined,
+      markReadForUser: async () => undefined,
+      markDeliveredForUser: async () => undefined,
+      ...overrides.messageReceiptRepository,
+    },
+    attachmentRepository: {
+      create: async () => undefined,
+      listByMessageIds: async () => [],
+      ...overrides.attachmentRepository,
     },
     cacheService: {
       del: async () => undefined,
@@ -86,8 +121,8 @@ test("sendMessage returns payload and emits enterprise events", async () => {
 
 test("markConversationRead rejects missing conversations", async () => {
   const { service } = createService({
-    conversationRepository: {
-      findById: async () => null,
+    conversationMemberRepository: {
+      findByConversationAndUser: async () => null,
     },
   });
 

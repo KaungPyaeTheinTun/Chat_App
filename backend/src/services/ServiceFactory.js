@@ -18,11 +18,14 @@ class ServiceFactory {
 
     const userService = new UserService({
       userRepository: repositories.userRepository,
+      deviceTokenRepository: repositories.deviceTokenRepository,
       ...shared,
     });
 
     const conversationService = new ConversationService({
       conversationRepository: repositories.conversationRepository,
+      conversationMemberRepository: repositories.conversationMemberRepository,
+      userRepository: repositories.userRepository,
       ...shared,
     });
 
@@ -30,6 +33,9 @@ class ServiceFactory {
       database,
       messageRepository: repositories.messageRepository,
       conversationRepository: repositories.conversationRepository,
+      conversationMemberRepository: repositories.conversationMemberRepository,
+      messageReceiptRepository: repositories.messageReceiptRepository,
+      attachmentRepository: repositories.attachmentRepository,
       socketGateway,
       ...shared,
     });

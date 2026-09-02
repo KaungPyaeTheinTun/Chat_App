@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { Image, Pressable, Text, View } from "react-native";
+import { Image, Pressable, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../styles/colors";
 import { formatTime } from "../utils/formatters";
@@ -15,19 +15,17 @@ export default function MessageBubble({
   isMine,
   onLongPress,
   onPressImage,
+  onRetry,
   interactive = true,
   containerStyle,
   bubbleStyle,
 }) {
   const didLongPressRef = useRef(false);
-  const bubbleRef = useRef(null);
   const imageUri =
     message.messageType === "image" ? resolveMediaUrl(message.content) : null;
 
   return (
     <View
-      ref={bubbleRef}
-      collapsable={false}
       style={{
         alignItems: isMine ? "flex-end" : "flex-start",
         marginVertical: 4,
@@ -35,7 +33,8 @@ export default function MessageBubble({
         ...(containerStyle || {}),
       }}
     >
-      <Pressable
+      <TouchableOpacity
+        activeOpacity={0.82}
         onPress={() => {
           if (!interactive) {
             return;
@@ -56,35 +55,14 @@ export default function MessageBubble({
           }
 
           didLongPressRef.current = true;
-          if (bubbleRef.current?.measureInWindow) {
-            bubbleRef.current.measureInWindow(
-              (bubbleX, bubbleY, bubbleWidth, bubbleHeight) => {
-                onLongPress?.(message, isMine, {
-                  ...event.nativeEvent,
-                  bubbleX,
-                  bubbleY,
-                  bubbleWidth,
-                  bubbleHeight,
-                });
-              },
-            );
-            return;
-          }
-
-          onLongPress?.(message, isMine, {
-            ...event.nativeEvent,
-            bubbleX: event.nativeEvent.pageX,
-            bubbleY: event.nativeEvent.pageY,
-            bubbleWidth: 220,
-            bubbleHeight: imageUri ? 240 : 72,
-          });
+          onLongPress?.(message, isMine, event?.nativeEvent || {});
         }}
         onPressOut={() => {
           setTimeout(() => {
             didLongPressRef.current = false;
-          }, 0);
+          }, 250);
         }}
-        delayLongPress={220}
+        delayLongPress={360}
         style={{
           maxWidth: "82%",
           paddingHorizontal: imageUri ? 6 : 14,
@@ -144,19 +122,39 @@ export default function MessageBubble({
           </Text>
 
           {isMine ? (
-            <Ionicons
-              name={message.isRead ? "checkmark-done" : "checkmark"}
-              size={14}
-              color={
-                message.isRead
-                  ? "rgba(255,255,255,0.88)"
-                  : "rgba(255,255,255,0.68)"
-              }
-              style={{ marginLeft: 6 }}
-            />
+            message.localStatus === "failed" ? (
+              <Pressable
+                onPress={() => onRetry?.(message)}
+                style={{ marginLeft: 6 }}
+              >
+                <Ionicons name="refresh-circle" size={17} color="#ffe1e1" />
+              </Pressable>
+            ) : message.localStatus === "pending" ? (
+              <Ionicons
+                name="time-outline"
+                size={14}
+                color="rgba(255,255,255,0.68)"
+                style={{ marginLeft: 6 }}
+              />
+            ) : (
+              <Ionicons
+                name={
+                  message.deliveryState === "read" || message.isRead
+                    ? "checkmark-done"
+                    : "checkmark"
+                }
+                size={14}
+                color={
+                  message.deliveryState === "read" || message.isRead
+                    ? "rgba(255,255,255,0.88)"
+                    : "rgba(255,255,255,0.68)"
+                }
+                style={{ marginLeft: 6 }}
+              />
+            )
           ) : null}
         </View>
-      </Pressable>
+      </TouchableOpacity>
     </View>
   );
 }

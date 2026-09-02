@@ -14,6 +14,16 @@ const buildUserRoutes = ({ userController, authMiddleware }) => {
     uploadAvatar.single("avatar"),
     userController.uploadAvatar,
   );
+  router.post(
+    "/device-tokens",
+    [
+      body("token").trim().notEmpty(),
+      body("platform").isIn(["ios", "android", "web"]),
+      body("deviceId").optional().isString(),
+    ],
+    requestValidator,
+    userController.registerDeviceToken,
+  );
   router.get("/:id", userController.profile);
   router.put(
     "/:id",

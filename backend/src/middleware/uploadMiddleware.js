@@ -55,5 +55,6 @@ const createImageUpload = (folderName, fallbackName) =>
 
 module.exports = {
   uploadAvatar: createImageUpload("avatars", "avatar"),
+  uploadGroupAvatar: createImageUpload("groups", "group"),
   uploadMessageImage: createImageUpload("messages", "message"),
 };

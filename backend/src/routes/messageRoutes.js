@@ -12,9 +12,13 @@ const buildMessageRoutes = ({ messageController, authMiddleware }) => {
   router.post(
     "/",
     [
-      body("receiverId").isInt({ min: 1 }),
       body("content").trim().notEmpty(),
-      body("messageType").optional().isIn(["text", "image"]),
+      body("clientMessageId").optional().isString().isLength({ max: 80 }),
+      body("conversationId").optional().isInt({ min: 1 }),
+      body("receiverId").optional().isInt({ min: 1 }),
+      body("messageType")
+        .optional()
+        .isIn(["text", "image", "audio", "video", "document"]),
     ],
     requestValidator,
     messageController.send,
@@ -22,7 +26,11 @@ const buildMessageRoutes = ({ messageController, authMiddleware }) => {
   router.post(
     "/image",
     uploadMessageImage.single("image"),
-    [body("receiverId").isInt({ min: 1 })],
+    [
+      body("clientMessageId").optional().isString().isLength({ max: 80 }),
+      body("conversationId").optional().isInt({ min: 1 }),
+      body("receiverId").optional().isInt({ min: 1 }),
+    ],
     requestValidator,
     messageController.sendImage,
   );
@@ -33,6 +41,10 @@ const buildMessageRoutes = ({ messageController, authMiddleware }) => {
     messageController.edit,
   );
   router.delete("/:id", messageController.remove);
+  router.post(
+    "/conversation/:conversationId/delivered",
+    messageController.markDelivered,
+  );
   router.post("/conversation/:conversationId/read", messageController.markRead);
 
   return router;

@@ -5,7 +5,12 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { conversationsApi, messagesApi, usersApi } from "../services/api";
+import {
+  conversationsApi,
+  createClientMessageId,
+  messagesApi,
+  usersApi,
+} from "../services/api";
 import { useAuth } from "./AuthContext";
 import { useSocket } from "./SocketContext";
 
@@ -13,6 +18,10 @@ const ChatContext = createContext(null);
 
 const sortConversations = (items) =>
   [...items].sort((left, right) => {
+    if (left.isPinned !== right.isPinned) {
+      return left.isPinned ? -1 : 1;
+    }
+
     const leftTime = new Date(
       left.lastMessage?.createdAt || left.updatedAt || 0,
     ).getTime();
@@ -24,9 +33,7 @@ const sortConversations = (items) =>
 
 const upsertConversation = (list, nextConversation) => {
   const existingIndex = list.findIndex(
-    (item) =>
-      item.conversationId === nextConversation.conversationId &&
-      item.conversationId !== null,
+    (item) => item.conversationId === nextConversation.conversationId,
   );
 
   if (existingIndex === -1) {
@@ -41,12 +48,33 @@ const upsertConversation = (list, nextConversation) => {
   return sortConversations(updated);
 };
 
+const buildOptimisticMessage = ({
+  senderId,
+  receiverId,
+  conversationId,
+  content,
+  messageType,
+  clientMessageId,
+}) => ({
+  messageId: `local-${clientMessageId}`,
+  clientMessageId,
+  conversationId,
+  senderId,
+  receiverId,
+  content,
+  messageType,
+  deliveryState: "pending",
+  localStatus: "pending",
+  createdAt: new Date().toISOString(),
+});
+
 export const ChatProvider = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
   const { on, off, emit } = useSocket();
   const [users, setUsers] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [messagesByConversation, setMessagesByConversation] = useState({});
+  const [paginationByConversation, setPaginationByConversation] = useState({});
   const [typingByConversation, setTypingByConversation] = useState({});
   const [activeConversation, setActiveConversation] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
@@ -74,7 +102,7 @@ export const ChatProvider = ({ children }) => {
       ]);
 
       setUsers(nextUsers);
-      setConversations(nextConversations);
+      setConversations(sortConversations(nextConversations));
     } finally {
       setIsLoading(false);
     }
@@ -89,65 +117,82 @@ export const ChatProvider = ({ children }) => {
     setUsers([]);
     setConversations([]);
     setMessagesByConversation({});
+    setPaginationByConversation({});
     setTypingByConversation({});
     setActiveConversation(null);
   }, [isAuthenticated]);
 
-  const mergeIncomingMessage = (conversationId, message) => {
-    setMessagesByConversation((current) => {
-      const existing = current[conversationId] || [];
-      const alreadyPresent = existing.some(
-        (entry) => entry.messageId === message.messageId,
-      );
-
-      if (alreadyPresent) {
-        return current;
-      }
-
-      return {
-        ...current,
-        [conversationId]: [...existing, message],
-      };
-    });
-
+  const updateConversationFromMessage = (conversationId, message) => {
     const otherUserId =
       message.senderId === user?.userId ? message.receiverId : message.senderId;
     const otherUser = usersById[otherUserId];
+    const shouldIncrementUnread =
+      message.senderId !== user?.userId &&
+      activeConversation?.conversationId !== conversationId;
 
     setConversations((current) => {
-      const existingConversation = current.find(
+      const existing = current.find(
         (item) => item.conversationId === conversationId,
       );
-      const shouldIncrementUnread =
-        message.senderId !== user?.userId &&
-        activeConversation?.conversationId !== conversationId;
-
       return upsertConversation(current, {
         conversationId,
-        otherUser,
+        conversationType: existing?.conversationType || "direct",
+        otherUser: existing?.otherUser || otherUser,
+        members: existing?.members,
+        title: existing?.title,
+        isPinned: existing?.isPinned || false,
+        isMuted: existing?.isMuted || false,
         lastMessageId: message.messageId,
         lastMessage: message,
         updatedAt: message.updatedAt || message.createdAt,
         unreadCount: shouldIncrementUnread
-          ? (existingConversation?.unreadCount || 0) + 1
+          ? (existing?.unreadCount || 0) + 1
           : 0,
       });
     });
   };
 
+  const mergeIncomingMessage = (conversationId, message) => {
+    setMessagesByConversation((current) => {
+      const existing = current[conversationId] || [];
+      const withoutDuplicate = existing.filter(
+        (entry) =>
+          entry.messageId !== message.messageId &&
+          entry.clientMessageId !== message.clientMessageId,
+      );
+
+      return {
+        ...current,
+        [conversationId]: [
+          ...withoutDuplicate,
+          { ...message, localStatus: "sent" },
+        ].sort((left, right) => {
+          const leftTime = new Date(left.createdAt || 0).getTime();
+          const rightTime = new Date(right.createdAt || 0).getTime();
+          return leftTime - rightTime;
+        }),
+      };
+    });
+
+    updateConversationFromMessage(conversationId, message);
+  };
+
   useEffect(() => {
     const handleReceiveMessage = ({ conversationId, message }) => {
       mergeIncomingMessage(conversationId, message);
+      if (conversationId === activeConversation?.conversationId) {
+        messagesApi.markDelivered(conversationId).catch(() => {});
+      }
     };
 
     const handleMessageUpdated = ({ conversationId, message }) => {
       setMessagesByConversation((current) => ({
         ...current,
         [conversationId]: (current[conversationId] || []).map((item) =>
-          item.messageId === message.messageId ? message : item,
+          item.messageId === message.messageId ? { ...item, ...message } : item,
         ),
       }));
-      mergeIncomingMessage(conversationId, message);
+      updateConversationFromMessage(conversationId, message);
     };
 
     const handleMessageDeleted = ({ conversationId, messageId }) => {
@@ -201,7 +246,9 @@ export const ChatProvider = ({ children }) => {
       setMessagesByConversation((current) => ({
         ...current,
         [conversationId]: (current[conversationId] || []).map((item) =>
-          item.receiverId === user?.userId ? item : { ...item, isRead: true },
+          item.senderId === user?.userId && readerId !== user?.userId
+            ? { ...item, deliveryState: "read", isRead: true }
+            : item,
         ),
       }));
 
@@ -235,31 +282,60 @@ export const ChatProvider = ({ children }) => {
     };
   }, [activeConversation, off, on, user, usersById]);
 
-  const loadMessages = async (conversationId) => {
+  const loadMessages = async (conversationId, options = {}) => {
     if (!conversationId) {
       return [];
     }
 
-    const messages = await messagesApi.list(conversationId);
+    const response = await messagesApi.list(conversationId, {
+      limit: options.limit || 30,
+      beforeMessageId: options.beforeMessageId,
+    });
+    const messages = response.messages || [];
+
     setMessagesByConversation((current) => ({
       ...current,
-      [conversationId]: messages,
+      [conversationId]: options.beforeMessageId
+        ? [...messages, ...(current[conversationId] || [])]
+        : messages,
     }));
+    setPaginationByConversation((current) => ({
+      ...current,
+      [conversationId]: {
+        nextCursor: response.nextCursor,
+        hasMore: response.hasMore,
+      },
+    }));
+
     return messages;
+  };
+
+  const loadOlderMessages = async (conversationId) => {
+    const pagination = paginationByConversation[conversationId];
+    if (!pagination?.hasMore || !pagination.nextCursor) {
+      return [];
+    }
+
+    return loadMessages(conversationId, {
+      beforeMessageId: pagination.nextCursor,
+    });
   };
 
   const openConversation = async (conversationLike) => {
     const peerUser = conversationLike.otherUser || conversationLike;
-    const existingConversation =
+    let existingConversation =
       conversationLike.conversationId != null
         ? conversationLike
         : conversations.find(
             (item) => item.otherUser?.userId === peerUser.userId,
-          ) || {
-            conversationId: null,
-            otherUser: peerUser,
-            lastMessage: null,
-          };
+          );
+
+    if (!existingConversation?.conversationId && peerUser?.userId) {
+      existingConversation = await conversationsApi.createDirect(
+        peerUser.userId,
+      );
+      await refreshChatData();
+    }
 
     if (activeConversation?.conversationId) {
       emit("conversation:leave", {
@@ -269,17 +345,7 @@ export const ChatProvider = ({ children }) => {
 
     setActiveConversation(existingConversation);
 
-    if (existingConversation.conversationId) {
-      setConversations((current) =>
-        current.map((item) =>
-          item.conversationId === existingConversation.conversationId
-            ? { ...item, unreadCount: 0 }
-            : item,
-        ),
-      );
-    }
-
-    if (existingConversation.conversationId) {
+    if (existingConversation?.conversationId) {
       emit("conversation:join", {
         conversationId: existingConversation.conversationId,
       });
@@ -288,32 +354,111 @@ export const ChatProvider = ({ children }) => {
       emit("message:read", {
         conversationId: existingConversation.conversationId,
       });
+      setConversations((current) =>
+        current.map((item) =>
+          item.conversationId === existingConversation.conversationId
+            ? { ...item, unreadCount: 0 }
+            : item,
+        ),
+      );
     }
   };
 
-  const sendMessage = async ({ receiverId, content, messageType = "text" }) => {
-    const response = await messagesApi.send({
+  const sendMessage = async ({
+    receiverId,
+    conversationId = activeConversation?.conversationId,
+    content,
+    messageType = "text",
+    clientMessageId = createClientMessageId(),
+  }) => {
+    const optimisticConversationId = conversationId || `pending-${receiverId}`;
+    const optimistic = buildOptimisticMessage({
+      senderId: user.userId,
       receiverId,
+      conversationId: optimisticConversationId,
       content,
       messageType,
+      clientMessageId,
+    });
+
+    setMessagesByConversation((current) => ({
+      ...current,
+      [optimisticConversationId]: [
+        ...(current[optimisticConversationId] || []),
+        optimistic,
+      ],
+    }));
+
+    try {
+      const response = await messagesApi.send({
+        receiverId,
+        conversationId,
+        content,
+        messageType,
+        clientMessageId,
+      });
+      mergeIncomingMessage(response.conversationId, response.message);
+
+      if (optimisticConversationId !== response.conversationId) {
+        setMessagesByConversation((current) => {
+          const { [optimisticConversationId]: _removed, ...rest } = current;
+          return rest;
+        });
+      }
+
+      setActiveConversation((current) =>
+        current &&
+        (current.otherUser?.userId === receiverId || current.conversationId)
+          ? { ...current, conversationId: response.conversationId }
+          : current,
+      );
+
+      return response;
+    } catch (error) {
+      setMessagesByConversation((current) => ({
+        ...current,
+        [optimisticConversationId]: (
+          current[optimisticConversationId] || []
+        ).map((item) =>
+          item.clientMessageId === clientMessageId
+            ? { ...item, localStatus: "failed", deliveryState: "failed" }
+            : item,
+        ),
+      }));
+      throw error;
+    }
+  };
+
+  const retryMessage = async (message) => {
+    return sendMessage({
+      receiverId: message.receiverId,
+      conversationId:
+        typeof message.conversationId === "number"
+          ? message.conversationId
+          : null,
+      content: message.content,
+      messageType: message.messageType,
+      clientMessageId: message.clientMessageId,
+    });
+  };
+
+  const sendImageMessage = async ({
+    receiverId,
+    conversationId = activeConversation?.conversationId,
+    asset,
+    clientMessageId = createClientMessageId(),
+  }) => {
+    const response = await messagesApi.sendImage({
+      receiverId,
+      conversationId,
+      asset,
+      clientMessageId,
     });
     mergeIncomingMessage(response.conversationId, response.message);
 
     setActiveConversation((current) =>
-      current && current.otherUser?.userId === receiverId
-        ? { ...current, conversationId: response.conversationId }
-        : current,
-    );
-
-    return response;
-  };
-
-  const sendImageMessage = async ({ receiverId, asset }) => {
-    const response = await messagesApi.sendImage(receiverId, asset);
-    mergeIncomingMessage(response.conversationId, response.message);
-
-    setActiveConversation((current) =>
-      current && current.otherUser?.userId === receiverId
+      current &&
+      (current.otherUser?.userId === receiverId || current.conversationId)
         ? { ...current, conversationId: response.conversationId }
         : current,
     );
@@ -344,6 +489,85 @@ export const ChatProvider = ({ children }) => {
     await refreshChatData();
   };
 
+  const createGroupConversation = async ({ title, memberIds }) => {
+    const conversation = await conversationsApi.createGroup({
+      title,
+      memberIds,
+    });
+    await refreshChatData();
+    return conversation;
+  };
+
+  const updateConversationPreferences = async (conversationId, preferences) => {
+    await conversationsApi.updatePreferences(conversationId, preferences);
+    setConversations((current) =>
+      sortConversations(
+        current
+          .map((item) =>
+            item.conversationId === conversationId
+              ? { ...item, ...preferences }
+              : item,
+          )
+          .filter((item) => !item.isDeleted),
+      ),
+    );
+  };
+
+  const leaveConversation = async (conversationId) => {
+    await conversationsApi.leave(conversationId);
+    setConversations((current) =>
+      current.filter((item) => item.conversationId !== conversationId),
+    );
+    if (activeConversation?.conversationId === conversationId) {
+      setActiveConversation(null);
+    }
+  };
+
+  const replaceConversation = (conversation) => {
+    setConversations((current) => upsertConversation(current, conversation));
+    setActiveConversation((current) =>
+      current?.conversationId === conversation.conversationId
+        ? { ...current, ...conversation }
+        : current,
+    );
+  };
+
+  const updateGroupProfile = async (conversationId, payload) => {
+    const conversation = await conversationsApi.updateGroupProfile(
+      conversationId,
+      payload,
+    );
+    replaceConversation(conversation);
+    return conversation;
+  };
+
+  const uploadGroupAvatar = async (conversationId, asset) => {
+    const conversation = await conversationsApi.uploadGroupAvatar(
+      conversationId,
+      asset,
+    );
+    replaceConversation(conversation);
+    return conversation;
+  };
+
+  const addGroupMembers = async (conversationId, memberIds) => {
+    const conversation = await conversationsApi.addMembers(
+      conversationId,
+      memberIds,
+    );
+    replaceConversation(conversation);
+    return conversation;
+  };
+
+  const removeGroupMember = async (conversationId, memberId) => {
+    const conversation = await conversationsApi.removeMember(
+      conversationId,
+      memberId,
+    );
+    replaceConversation(conversation);
+    return conversation;
+  };
+
   const searchMessages = async (query) => {
     if (!query?.trim()) {
       setSearchResults([]);
@@ -367,16 +591,20 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  const activeConversationId = activeConversation?.conversationId;
   const value = useMemo(
     () => ({
       users,
       conversations,
       activeConversation,
-      activeMessages: activeConversation?.conversationId
-        ? messagesByConversation[activeConversation.conversationId] || []
+      activeMessages: activeConversationId
+        ? messagesByConversation[activeConversationId] || []
         : [],
-      typingUsers: activeConversation?.conversationId
-        ? (typingByConversation[activeConversation.conversationId] || [])
+      activePagination: activeConversationId
+        ? paginationByConversation[activeConversationId] || {}
+        : {},
+      typingUsers: activeConversationId
+        ? (typingByConversation[activeConversationId] || [])
             .map((id) => usersById[id])
             .filter(Boolean)
         : [],
@@ -385,10 +613,19 @@ export const ChatProvider = ({ children }) => {
       refreshChatData,
       openConversation,
       loadMessages,
+      loadOlderMessages,
       sendMessage,
+      retryMessage,
       sendImageMessage,
       editMessage,
       deleteMessage,
+      createGroupConversation,
+      updateConversationPreferences,
+      leaveConversation,
+      updateGroupProfile,
+      uploadGroupAvatar,
+      addGroupMembers,
+      removeGroupMember,
       searchMessages,
       startTyping,
       stopTyping,
@@ -397,7 +634,9 @@ export const ChatProvider = ({ children }) => {
       users,
       conversations,
       activeConversation,
+      activeConversationId,
       messagesByConversation,
+      paginationByConversation,
       typingByConversation,
       usersById,
       searchResults,

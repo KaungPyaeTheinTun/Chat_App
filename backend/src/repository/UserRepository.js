@@ -5,7 +5,7 @@ class UserRepository extends BaseRepository {
     super(database, "users", "user_id", {
       defaultOrderBy: "username ASC",
       defaultSelect:
-        "user_id, username, email, password, avatar_url, status, created_at, updated_at",
+        "user_id, username, email, password, avatar_url, status, last_seen_at, created_at, updated_at",
     });
   }
 
@@ -20,7 +20,7 @@ class UserRepository extends BaseRepository {
   async list(excludeUserId, limit = 50, offset = 0) {
     return this.db.query(
       `
-        SELECT user_id, username, email, avatar_url, status, created_at, updated_at
+        SELECT user_id, username, email, avatar_url, status, last_seen_at, created_at, updated_at
         FROM users
         WHERE user_id != ?
         ORDER BY username ASC
@@ -31,10 +31,18 @@ class UserRepository extends BaseRepository {
   }
 
   async updateStatus(userId, status) {
-    await this.db.execute("UPDATE users SET status = ? WHERE user_id = ?", [
-      status,
-      userId,
-    ]);
+    await this.db.execute(
+      `
+        UPDATE users
+        SET status = ?,
+            last_seen_at = CASE
+              WHEN ? = 'offline' THEN CURRENT_TIMESTAMP
+              ELSE last_seen_at
+            END
+        WHERE user_id = ?
+      `,
+      [status, status, userId],
+    );
     return this.findById(userId);
   }
 }

@@ -1,5 +1,6 @@
 import React from "react";
 import { Pressable, Text, View } from "react-native";
+import { FontAwesome6 } from "@expo/vector-icons";
 import UserAvatar from "./UserAvatar";
 import { conversationPreview, formatDateLabel } from "../utils/formatters";
 
@@ -8,14 +9,27 @@ const CHAT_TEXT = "#16181d";
 const CHAT_SUBTEXT = "#7f8796";
 const CHAT_ROW_BG = "#ffffff";
 
-export default function ConversationItem({ conversation, onPress }) {
+export default function ConversationItem({
+  conversation,
+  onPress,
+  onLongPress,
+}) {
   const otherUser = conversation.otherUser;
+  const title =
+    conversation.conversationType === "group"
+      ? conversation.title || "Group chat"
+      : otherUser?.username || "Unknown user";
   const unreadCount = Number(conversation.unreadCount || 0);
   const isUnread = unreadCount > 0;
+  const dateLabel = formatDateLabel(
+    conversation.lastMessage?.createdAt || conversation.updatedAt,
+  );
 
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={() => onLongPress?.(conversation)}
+      delayLongPress={260}
       style={{
         flexDirection: "row",
         alignItems: "center",
@@ -25,7 +39,14 @@ export default function ConversationItem({ conversation, onPress }) {
       }}
     >
       <View style={{ marginRight: 14 }}>
-        <UserAvatar user={otherUser} size={54} />
+        <UserAvatar
+          user={
+            conversation.conversationType === "group"
+              ? { username: title, avatarUrl: conversation.avatarUrl }
+              : otherUser
+          }
+          size={54}
+        />
         <View
           style={{
             position: "absolute",
@@ -43,9 +64,27 @@ export default function ConversationItem({ conversation, onPress }) {
       </View>
 
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 17, fontWeight: "700", color: CHAT_TEXT }}>
-          {otherUser?.username || "Unknown user"}
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Text
+            numberOfLines={1}
+            style={{
+              flexShrink: 1,
+              fontSize: 17,
+              fontWeight: "700",
+              color: CHAT_TEXT,
+            }}
+          >
+            {title}
+          </Text>
+          {conversation.isMuted ? (
+            <FontAwesome6
+              name="volume-xmark"
+              size={15}
+              color="#9aa3b2"
+              style={{ marginLeft: 6 }}
+            />
+          ) : null}
+        </View>
         <Text
           numberOfLines={1}
           style={{
@@ -59,23 +98,28 @@ export default function ConversationItem({ conversation, onPress }) {
       </View>
 
       <View style={{ alignItems: "flex-end", marginLeft: 12 }}>
-        <Text
-          style={{
-            color: isUnread ? CHAT_SUBTEXT : "#a0a7b4",
-            fontSize: 11,
-            fontWeight: isUnread ? "600" : "500",
-          }}
-        >
-          {formatDateLabel(
-            conversation.lastMessage?.createdAt || conversation.updatedAt,
-          )}
-        </Text>
+        {conversation.isPinned ? (
+          <View style={pinDateBadge}>
+            <FontAwesome6 name="thumbtack" size={13} color="#687486" />
+            <Text style={pinDateText}>{dateLabel}</Text>
+          </View>
+        ) : (
+          <Text
+            style={{
+              color: isUnread ? CHAT_SUBTEXT : "#a0a7b4",
+              fontSize: 11,
+              fontWeight: isUnread ? "600" : "500",
+            }}
+          >
+            {dateLabel}
+          </Text>
+        )}
         {isUnread ? (
           <View
             style={{
               minWidth: 23,
               height: 23,
-              marginTop: 10,
+              marginTop: conversation.isPinned ? 7 : 10,
               paddingHorizontal: 6,
               borderRadius: 11.5,
               alignItems: "center",
@@ -100,3 +144,19 @@ export default function ConversationItem({ conversation, onPress }) {
     </Pressable>
   );
 }
+
+const pinDateBadge = {
+  flexDirection: "row",
+  alignItems: "center",
+  paddingHorizontal: 8,
+  paddingVertical: 5,
+  borderRadius: 999,
+  backgroundColor: "#edf1f7",
+};
+
+const pinDateText = {
+  marginLeft: 4,
+  color: "#687486",
+  fontSize: 11,
+  fontWeight: "700",
+};

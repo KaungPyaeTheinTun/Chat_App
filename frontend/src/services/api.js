@@ -10,7 +10,7 @@ let accessToken = null;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 15000,
 });
 
 api.interceptors.request.use((config) => {
@@ -52,6 +52,9 @@ const buildImageFormData = (fieldName, asset, fallbackFileName) => {
   return formData;
 };
 
+export const createClientMessageId = () =>
+  `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
 export const setApiToken = (token) => {
   accessToken = token;
 };
@@ -74,33 +77,76 @@ export const usersApi = {
     const formData = buildImageFormData("avatar", asset, "avatar");
     return (await api.post(`/users/${userId}/avatar`, formData)).data.data.user;
   },
+  registerDeviceToken: async (payload) =>
+    unwrap(await api.post("/users/device-tokens", payload)),
   status: async (userId) =>
     (await api.get(`/users/status/${userId}`)).data.data,
 };
 
 export const conversationsApi = {
-  list: async () => (await api.get("/conversations")).data.data.conversations,
+  list: async (params = {}) =>
+    (await api.get("/conversations", { params })).data.data.conversations,
+  createDirect: async (userId) =>
+    (await api.post("/conversations/direct", { userId })).data.data
+      .conversation,
+  createGroup: async ({ title, memberIds }) =>
+    (await api.post("/conversations/group", { title, memberIds })).data.data
+      .conversation,
+  updatePreferences: async (conversationId, payload) =>
+    unwrap(
+      await api.patch(`/conversations/${conversationId}/preferences`, payload),
+    ),
+  updateGroupProfile: async (conversationId, payload) =>
+    (await api.patch(`/conversations/${conversationId}/group`, payload)).data
+      .data.conversation,
+  uploadGroupAvatar: async (conversationId, asset) => {
+    const formData = buildImageFormData("avatar", asset, "group");
+    return (
+      await api.post(`/conversations/${conversationId}/group/avatar`, formData)
+    ).data.data.conversation;
+  },
+  addMembers: async (conversationId, memberIds) =>
+    (await api.post(`/conversations/${conversationId}/members`, { memberIds }))
+      .data.data.conversation,
+  removeMember: async (conversationId, memberId) =>
+    (await api.delete(`/conversations/${conversationId}/members/${memberId}`))
+      .data.data.conversation,
+  leave: async (conversationId) =>
+    unwrap(await api.post(`/conversations/${conversationId}/leave`)),
 };
 
 export const messagesApi = {
   list: async (conversationId, params = {}) =>
-    (await api.get(`/messages/conversation/${conversationId}`, { params })).data
-      .data.messages,
-  send: async (payload) => (await api.post("/messages", payload)).data.data,
-  sendImage: async (receiverId, asset) => {
+    unwrap(
+      await api.get(`/messages/conversation/${conversationId}`, { params }),
+    ),
+  send: async (payload) => unwrap(await api.post("/messages", payload)),
+  sendImage: async ({ receiverId, conversationId, asset, clientMessageId }) => {
     const formData = buildImageFormData("image", asset, "message");
-    formData.append("receiverId", String(receiverId));
-    return (await api.post("/messages/image", formData)).data.data;
+    if (receiverId) {
+      formData.append("receiverId", String(receiverId));
+    }
+    if (conversationId) {
+      formData.append("conversationId", String(conversationId));
+    }
+    if (clientMessageId) {
+      formData.append("clientMessageId", clientMessageId);
+    }
+    return unwrap(await api.post("/messages/image", formData));
   },
   edit: async (messageId, payload) =>
-    (await api.patch(`/messages/${messageId}`, payload)).data.data,
+    unwrap(await api.patch(`/messages/${messageId}`, payload)),
   remove: async (messageId) =>
-    (await api.delete(`/messages/${messageId}`)).data.data,
+    unwrap(await api.delete(`/messages/${messageId}`)),
   search: async (query) =>
     (await api.get("/messages/search", { params: { q: query } })).data.data
       .messages,
+  markDelivered: async (conversationId) =>
+    unwrap(
+      await api.post(`/messages/conversation/${conversationId}/delivered`),
+    ),
   markRead: async (conversationId) =>
-    (await api.post(`/messages/conversation/${conversationId}/read`)).data.data,
+    unwrap(await api.post(`/messages/conversation/${conversationId}/read`)),
 };
 
 export default api;

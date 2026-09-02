@@ -3,12 +3,14 @@ const ValidationException = require("../../exceptions/ValidationException");
 class Message {
   constructor(data = {}) {
     this.messageId = data.message_id || data.messageId || null;
+    this.clientMessageId =
+      data.client_message_id || data.clientMessageId || null;
     this.conversationId = data.conversation_id || data.conversationId || null;
     this.senderId = data.sender_id || data.senderId || null;
     this.receiverId = data.receiver_id || data.receiverId || null;
     this.content = data.content || null;
     this.messageType = data.message_type || data.messageType || "text";
-    this.isRead = Boolean(data.is_read ?? data.isRead ?? false);
+    this.deliveryState = data.delivery_state || data.deliveryState || "sent";
     this.createdAt = data.created_at || data.createdAt || null;
     this.updatedAt = data.updated_at || data.updatedAt || null;
   }
@@ -20,8 +22,8 @@ class Message {
       errors.push("Message content cannot be empty.");
     }
 
-    if (!this.senderId || !this.receiverId) {
-      errors.push("Sender and receiver are required.");
+    if (!this.senderId) {
+      errors.push("Sender is required.");
     }
 
     if (errors.length) {
@@ -32,12 +34,13 @@ class Message {
   toJSON() {
     return {
       messageId: this.messageId,
+      clientMessageId: this.clientMessageId,
       conversationId: this.conversationId,
       senderId: this.senderId,
       receiverId: this.receiverId,
       content: this.content,
       messageType: this.messageType,
-      isRead: this.isRead,
+      deliveryState: this.deliveryState,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };

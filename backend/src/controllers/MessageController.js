@@ -7,27 +7,28 @@ class MessageController extends BaseController {
     this.messageService = messageService;
 
     this.list = this.handleRequest(async (req, res) => {
-      const messages = await this.messageService.listMessages(
+      const result = await this.messageService.listMessages(
         req.user.userId,
         Number(req.params.conversationId),
-        req.query.limit,
-        req.query.offset,
+        {
+          limit: req.query.limit,
+          beforeMessageId: req.query.beforeMessageId,
+        },
       );
 
-      return this.listResponse(
-        res,
-        "Messages fetched successfully.",
-        "messages",
-        messages,
-      );
+      return this.ok(res, "Messages fetched successfully.", result);
     });
 
     this.send = this.handleRequest(async (req, res) => {
       const result = await this.messageService.sendMessage({
         senderId: req.user.userId,
-        receiverId: Number(req.body.receiverId),
+        receiverId: req.body.receiverId ? Number(req.body.receiverId) : null,
+        conversationId: req.body.conversationId
+          ? Number(req.body.conversationId)
+          : null,
         content: req.body.content,
         messageType: req.body.messageType,
+        clientMessageId: req.body.clientMessageId,
       });
 
       return this.created(res, "Message sent successfully.", result);
@@ -40,8 +41,13 @@ class MessageController extends BaseController {
 
       const result = await this.messageService.sendUploadedImageMessage({
         senderId: req.user.userId,
-        receiverId: Number(req.body.receiverId),
+        receiverId: req.body.receiverId ? Number(req.body.receiverId) : null,
+        conversationId: req.body.conversationId
+          ? Number(req.body.conversationId)
+          : null,
+        clientMessageId: req.body.clientMessageId,
         imagePath: `/uploads/messages/${req.file.filename}`,
+        file: req.file,
       });
 
       return this.created(res, "Image message sent successfully.", result);
@@ -77,6 +83,15 @@ class MessageController extends BaseController {
         "messages",
         results,
       );
+    });
+
+    this.markDelivered = this.handleRequest(async (req, res) => {
+      const result = await this.messageService.markConversationDelivered(
+        req.user.userId,
+        Number(req.params.conversationId),
+      );
+
+      return this.ok(res, "Conversation marked as delivered.", result);
     });
 
     this.markRead = this.handleRequest(async (req, res) => {
