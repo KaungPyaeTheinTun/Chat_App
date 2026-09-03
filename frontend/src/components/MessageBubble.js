@@ -1,14 +1,9 @@
 import React, { useRef } from "react";
 import { Image, Pressable, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../styles/colors";
+import { useTheme } from "../context/ThemeContext";
 import { formatTime } from "../utils/formatters";
 import { resolveMediaUrl } from "../utils/media";
-
-const MINE_BG = "#3b82f6";
-const OTHER_BG = "#ffffff";
-const TEXT_DARK = "#16181d";
-const TEXT_MUTED = "#8b93a5";
 
 export default function MessageBubble({
   message,
@@ -20,6 +15,7 @@ export default function MessageBubble({
   containerStyle,
   bubbleStyle,
 }) {
+  const { colors } = useTheme();
   const didLongPressRef = useRef(false);
   const imageUri =
     message.messageType === "image" ? resolveMediaUrl(message.content) : null;
@@ -70,9 +66,9 @@ export default function MessageBubble({
           borderRadius: 20,
           borderTopRightRadius: isMine ? 8 : 20,
           borderTopLeftRadius: isMine ? 20 : 8,
-          backgroundColor: isMine ? MINE_BG : OTHER_BG,
+          backgroundColor: isMine ? colors.bubbleMine : colors.bubbleOther,
           borderWidth: isMine ? 0 : 1,
-          borderColor: "#edf1f6",
+          borderColor: colors.border,
           shadowColor: "#000000",
           shadowOpacity: isMine ? 0.08 : 0.06,
           shadowRadius: isMine ? 10 : 14,
@@ -95,7 +91,7 @@ export default function MessageBubble({
         ) : (
           <Text
             style={{
-              color: isMine ? colors.white : TEXT_DARK,
+              color: isMine ? colors.white : colors.text,
               lineHeight: 20,
               fontSize: 15,
             }}
@@ -114,7 +110,7 @@ export default function MessageBubble({
         >
           <Text
             style={{
-              color: isMine ? "rgba(255,255,255,0.82)" : TEXT_MUTED,
+              color: isMine ? "rgba(255,255,255,0.82)" : colors.subtext,
               fontSize: 11,
             }}
           >

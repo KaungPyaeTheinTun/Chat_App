@@ -5,17 +5,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import UserAvatar from "../../components/UserAvatar";
 import { useToast, getErrorMessage } from "../../components/ToastProvider";
 import { useChat } from "../../context/ChatContext";
-import { colors } from "../../styles/colors";
+import { useLocalization } from "../../context/LocalizationContext";
+import { useTheme } from "../../context/ThemeContext";
 import { formatDateLabel } from "../../utils/formatters";
-
-const PAGE_BG = "#f6f7fb";
-const CARD_BG = "#ffffff";
-const TEXT = "#17191f";
-const SUBTEXT = "#8b93a5";
 
 export default function SearchScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const { showError } = useToast();
+  const { colors } = useTheme();
+  const { t } = useLocalization();
   const {
     conversations,
     users,
@@ -51,7 +49,7 @@ export default function SearchScreen({ navigation }) {
     try {
       await searchMessages(text);
     } catch (error) {
-      showError(getErrorMessage(error, "Unable to search messages."));
+      showError(getErrorMessage(error, t("searchUnable")));
     } finally {
       setIsSearching(false);
     }
@@ -69,19 +67,19 @@ export default function SearchScreen({ navigation }) {
       title:
         conversation.title ||
         conversation.otherUser?.username ||
-        "Conversation",
+        t("commonConversation"),
       peerUser: conversation.otherUser,
     });
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: PAGE_BG }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View
         style={{
           paddingTop: insets.top + 12,
           paddingHorizontal: 20,
           paddingBottom: 16,
-          backgroundColor: PAGE_BG,
+          backgroundColor: colors.background,
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -93,10 +91,10 @@ export default function SearchScreen({ navigation }) {
               borderRadius: 21,
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: CARD_BG,
+              backgroundColor: colors.card,
             }}
           >
-            <Ionicons name="chevron-back" size={24} color={TEXT} />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </Pressable>
           <View
             style={{
@@ -107,22 +105,22 @@ export default function SearchScreen({ navigation }) {
               flexDirection: "row",
               alignItems: "center",
               paddingHorizontal: 16,
-              backgroundColor: CARD_BG,
+              backgroundColor: colors.card,
               borderWidth: 1,
-              borderColor: "#eef1f5",
+              borderColor: colors.border,
             }}
           >
-            <Ionicons name="search-outline" size={19} color={SUBTEXT} />
+            <Ionicons name="search-outline" size={19} color={colors.subtext} />
             <TextInput
               autoFocus
               value={query}
               onChangeText={handleSearch}
-              placeholder="Search messages"
-              placeholderTextColor={SUBTEXT}
+              placeholder={t("searchMessages")}
+              placeholderTextColor={colors.subtext}
               style={{
                 flex: 1,
                 marginLeft: 10,
-                color: TEXT,
+                color: colors.text,
                 fontSize: 15,
               }}
             />
@@ -139,11 +137,13 @@ export default function SearchScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
       >
         {!query.trim() ? (
-          <View style={emptyCard}>
+          <View style={[emptyCard, { backgroundColor: colors.card }]}>
             <Ionicons name="search-outline" size={28} color={colors.primary} />
-            <Text style={emptyTitle}>Search your messages</Text>
-            <Text style={emptyText}>
-              Type a word or phrase to find conversations.
+            <Text style={[emptyTitle, { color: colors.text }]}>
+              {t("searchYourMessages")}
+            </Text>
+            <Text style={[emptyText, { color: colors.subtext }]}>
+              {t("searchHint")}
             </Text>
           </View>
         ) : searchResults.length ? (
@@ -152,7 +152,7 @@ export default function SearchScreen({ navigation }) {
             const user =
               conversation?.conversationType === "group"
                 ? {
-                    username: conversation.title || "Group chat",
+                    username: conversation.title || t("commonGroupChat"),
                     avatarUrl: conversation.avatarUrl,
                   }
                 : conversation?.otherUser ||
@@ -163,7 +163,10 @@ export default function SearchScreen({ navigation }) {
               <Pressable
                 key={message.messageId}
                 onPress={() => handleOpenResult(message)}
-                style={resultCard}
+                style={[
+                  resultCard,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
               >
                 <UserAvatar user={user} size={46} />
                 <View style={{ flex: 1, marginLeft: 12 }}>
@@ -176,14 +179,22 @@ export default function SearchScreen({ navigation }) {
                   >
                     <Text
                       numberOfLines={1}
-                      style={{ flex: 1, color: TEXT, fontWeight: "800" }}
+                      style={{
+                        flex: 1,
+                        color: colors.text,
+                        fontWeight: "800",
+                      }}
                     >
                       {conversation?.conversationType === "group"
-                        ? conversation.title || "Group chat"
-                        : user?.username || "Conversation"}
+                        ? conversation.title || t("commonGroupChat")
+                        : user?.username || t("commonConversation")}
                     </Text>
                     <Text
-                      style={{ marginLeft: 12, color: SUBTEXT, fontSize: 12 }}
+                      style={{
+                        marginLeft: 12,
+                        color: colors.subtext,
+                        fontSize: 12,
+                      }}
                     >
                       {formatDateLabel(message.createdAt)}
                     </Text>
@@ -192,12 +203,12 @@ export default function SearchScreen({ navigation }) {
                     numberOfLines={2}
                     style={{
                       marginTop: 5,
-                      color: SUBTEXT,
+                      color: colors.subtext,
                       lineHeight: 20,
                     }}
                   >
                     {message.messageType === "image"
-                      ? "Photo"
+                      ? t("commonPhoto")
                       : message.content}
                   </Text>
                 </View>
@@ -205,11 +216,13 @@ export default function SearchScreen({ navigation }) {
             );
           })
         ) : (
-          <View style={emptyCard}>
-            <Text style={emptyTitle}>
-              {isSearching ? "Searching..." : "No results found"}
+          <View style={[emptyCard, { backgroundColor: colors.card }]}>
+            <Text style={[emptyTitle, { color: colors.text }]}>
+              {isSearching ? t("searchSearching") : t("searchNoResults")}
             </Text>
-            <Text style={emptyText}>Try another keyword.</Text>
+            <Text style={[emptyText, { color: colors.subtext }]}>
+              {t("commonTryAnotherKeyword")}
+            </Text>
           </View>
         )}
       </ScrollView>
@@ -223,9 +236,7 @@ const resultCard = {
   borderRadius: 22,
   flexDirection: "row",
   alignItems: "center",
-  backgroundColor: CARD_BG,
   borderWidth: 1,
-  borderColor: "#eef1f5",
 };
 
 const emptyCard = {
@@ -233,19 +244,16 @@ const emptyCard = {
   padding: 22,
   borderRadius: 24,
   alignItems: "center",
-  backgroundColor: CARD_BG,
 };
 
 const emptyTitle = {
   marginTop: 10,
-  color: TEXT,
   fontSize: 18,
   fontWeight: "800",
 };
 
 const emptyText = {
   marginTop: 8,
-  color: SUBTEXT,
   textAlign: "center",
   lineHeight: 20,
 };

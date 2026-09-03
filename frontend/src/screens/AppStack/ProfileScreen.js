@@ -6,19 +6,16 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import UserAvatar from "../../components/UserAvatar";
 import { useToast, getErrorMessage } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
+import { useLocalization } from "../../context/LocalizationContext";
+import { useTheme } from "../../context/ThemeContext";
 import { usersApi } from "../../services/api";
-
-const PAGE_BG = "#f6f7fb";
-const CARD_BG = "rgba(255,255,255,0.92)";
-const TEXT = "#17191f";
-const SUBTEXT = "#8b93a5";
-const BLUE = "#3b82f6";
-const BORDER = "#eef1f5";
 
 export default function ProfileScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const { user, updateCurrentUser } = useAuth();
   const { showError, showSuccess } = useToast();
+  const { colors } = useTheme();
+  const { t } = useLocalization();
   const [username, setUsername] = useState(user?.username || "");
   const [selectedAvatar, setSelectedAvatar] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -32,7 +29,7 @@ export default function ProfileScreen({ navigation }) {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permission.granted) {
-      showError("Photo library permission is required.");
+      showError(t("chatPhotoPermission"));
       return;
     }
 
@@ -45,7 +42,7 @@ export default function ProfileScreen({ navigation }) {
 
     if (!result.canceled) {
       setSelectedAvatar(result.assets[0]);
-      showSuccess("Photo selected.");
+      showSuccess(t("profilePhotoSelected"));
     }
   };
 
@@ -71,13 +68,9 @@ export default function ProfileScreen({ navigation }) {
 
       updateCurrentUser(updatedUser);
       setSelectedAvatar(null);
-      showSuccess(
-        changed
-          ? "Profile updated successfully."
-          : "No profile changes to save.",
-      );
+      showSuccess(changed ? t("profileUpdated") : t("profileNoChanges"));
     } catch (error) {
-      showError(getErrorMessage(error, "Unable to update profile."));
+      showError(getErrorMessage(error, t("profileUnableUpdate")));
     } finally {
       setIsSaving(false);
     }
@@ -89,7 +82,7 @@ export default function ProfileScreen({ navigation }) {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: PAGE_BG }}
+      style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{
         paddingHorizontal: 20,
         paddingTop: insets.top + 18,
@@ -97,15 +90,18 @@ export default function ProfileScreen({ navigation }) {
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center" }}>
-        <Pressable onPress={() => navigation.goBack()} style={backButton}>
-          <Ionicons name="chevron-back" size={24} color={TEXT} />
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={[backButton, { backgroundColor: colors.cardGlass }]}
+        >
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <View style={{ marginLeft: 12 }}>
-          <Text style={{ color: TEXT, fontSize: 28, fontWeight: "900" }}>
-            Profile
+          <Text style={{ color: colors.text, fontSize: 28, fontWeight: "700" }}>
+            {t("profileTitle")}
           </Text>
-          <Text style={{ marginTop: 4, color: SUBTEXT }}>
-            Update your account details.
+          <Text style={{ marginTop: 4, color: colors.subtext }}>
+            {t("profileSubtitle")}
           </Text>
         </View>
       </View>
@@ -116,9 +112,9 @@ export default function ProfileScreen({ navigation }) {
           alignItems: "center",
           padding: 24,
           borderRadius: 28,
-          backgroundColor: CARD_BG,
+          backgroundColor: colors.cardGlass,
           borderWidth: 1,
-          borderColor: "rgba(255,255,255,0.72)",
+          borderColor: colors.border,
           shadowColor: "#000000",
           shadowOpacity: 0.06,
           shadowRadius: 18,
@@ -128,7 +124,15 @@ export default function ProfileScreen({ navigation }) {
       >
         <Pressable onPress={handlePickAvatar}>
           <UserAvatar user={previewUser} size={88} />
-          <View style={cameraBadge}>
+          <View
+            style={[
+              cameraBadge,
+              {
+                backgroundColor: colors.primary,
+                borderColor: colors.cardGlass,
+              },
+            ]}
+          >
             <Ionicons name="camera" size={16} color="#ffffff" />
           </View>
         </Pressable>
@@ -137,12 +141,14 @@ export default function ProfileScreen({ navigation }) {
             marginTop: 14,
             fontSize: 18,
             fontWeight: "900",
-            color: TEXT,
+            color: colors.text,
           }}
         >
           {user?.username}
         </Text>
-        <Text style={{ marginTop: 6, color: SUBTEXT }}>{user?.email}</Text>
+        <Text style={{ marginTop: 6, color: colors.subtext }}>
+          {user?.email}
+        </Text>
       </View>
 
       <View
@@ -150,41 +156,60 @@ export default function ProfileScreen({ navigation }) {
           marginTop: 18,
           padding: 18,
           borderRadius: 28,
-          backgroundColor: CARD_BG,
+          backgroundColor: colors.cardGlass,
           borderWidth: 1,
-          borderColor: "rgba(255,255,255,0.72)",
+          borderColor: colors.border,
         }}
       >
-        <Text style={{ fontWeight: "900", color: TEXT, fontSize: 16 }}>
-          Edit details
+        <Text style={{ fontWeight: "900", color: colors.text, fontSize: 16 }}>
+          {t("profileEditDetails")}
         </Text>
 
         <TextInput
           value={username}
           onChangeText={setUsername}
-          placeholder="Username"
-          placeholderTextColor={SUBTEXT}
-          style={inputStyle}
+          placeholder={t("profileUsername")}
+          placeholderTextColor={colors.subtext}
+          style={[
+            inputStyle,
+            {
+              borderColor: colors.border,
+              backgroundColor: colors.input,
+              color: colors.text,
+            },
+          ]}
         />
 
-        <Pressable onPress={handlePickAvatar} style={pickerButton}>
-          <Ionicons name="image-outline" size={18} color={BLUE} />
-          <Text style={pickerButtonText}>
-            {selectedAvatar
-              ? "Change selected photo"
-              : "Choose photo from device"}
+        <Pressable
+          onPress={handlePickAvatar}
+          style={[
+            pickerButton,
+            {
+              borderColor: colors.border,
+              backgroundColor: colors.input,
+            },
+          ]}
+        >
+          <Ionicons name="image-outline" size={18} color={colors.primary} />
+          <Text style={[pickerButtonText, { color: colors.primary }]}>
+            {selectedAvatar ? t("profileChangePhoto") : t("profileChoosePhoto")}
           </Text>
         </Pressable>
 
         {selectedAvatar ? (
-          <Text style={selectedText}>
-            Selected: {selectedAvatar.fileName || "photo"}
+          <Text style={[selectedText, { color: colors.subtext }]}>
+            {t("profileSelectedPhoto", {
+              name: selectedAvatar.fileName || t("commonPhoto"),
+            })}
           </Text>
         ) : null}
 
-        <Pressable onPress={handleSave} style={primaryButton}>
+        <Pressable
+          onPress={handleSave}
+          style={[primaryButton, { backgroundColor: colors.primary }]}
+        >
           <Text style={{ color: "#ffffff", fontWeight: "800" }}>
-            {isSaving ? "Saving..." : "Save Profile"}
+            {isSaving ? t("commonSaving") : t("profileSave")}
           </Text>
         </Pressable>
       </View>
@@ -198,9 +223,6 @@ const inputStyle = {
   paddingVertical: 14,
   borderRadius: 999,
   borderWidth: 1,
-  borderColor: BORDER,
-  backgroundColor: "rgba(255,255,255,0.78)",
-  color: TEXT,
 };
 
 const pickerButton = {
@@ -209,21 +231,17 @@ const pickerButton = {
   paddingVertical: 14,
   borderRadius: 999,
   borderWidth: 1,
-  borderColor: BORDER,
-  backgroundColor: "rgba(255,255,255,0.78)",
   flexDirection: "row",
   alignItems: "center",
   gap: 10,
 };
 
 const pickerButtonText = {
-  color: BLUE,
   fontWeight: "700",
 };
 
 const selectedText = {
   marginTop: 10,
-  color: SUBTEXT,
   fontSize: 12,
 };
 
@@ -232,7 +250,6 @@ const primaryButton = {
   paddingVertical: 15,
   borderRadius: 999,
   alignItems: "center",
-  backgroundColor: BLUE,
 };
 
 const backButton = {
@@ -241,7 +258,6 @@ const backButton = {
   borderRadius: 21,
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: CARD_BG,
 };
 
 const cameraBadge = {
@@ -253,7 +269,5 @@ const cameraBadge = {
   borderRadius: 15,
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: BLUE,
   borderWidth: 3,
-  borderColor: CARD_BG,
 };

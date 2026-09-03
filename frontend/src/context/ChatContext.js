@@ -5,16 +5,21 @@ import React, {
   useMemo,
   useState,
 } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   conversationsApi,
   createClientMessageId,
   messagesApi,
   usersApi,
 } from "../services/api";
+import { useToast } from "../components/ToastProvider";
+import { useLocalization } from "./LocalizationContext";
+import { formatTime } from "../utils/formatters";
 import { useAuth } from "./AuthContext";
 import { useSocket } from "./SocketContext";
 
 const ChatContext = createContext(null);
+const NOTIFICATION_SETTINGS_KEY = "chatapp.notificationSettings";
 
 const sortConversations = (items) =>
   [...items].sort((left, right) => {
@@ -70,6 +75,8 @@ const buildOptimisticMessage = ({
 
 export const ChatProvider = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
+  const { showMessageNotification } = useToast();
+  const { t } = useLocalization();
   const { on, off, emit } = useSocket();
   const [users, setUsers] = useState([]);
   const [conversations, setConversations] = useState([]);
@@ -78,6 +85,10 @@ export const ChatProvider = ({ children }) => {
   const [typingByConversation, setTypingByConversation] = useState({});
   const [activeConversation, setActiveConversation] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
+  const [notificationSettings, setNotificationSettings] = useState({
+    muteAll: false,
+    mutedUserIds: [],
+  });
   const [isLoading, setIsLoading] = useState(false);
 
   const usersById = useMemo(
@@ -120,7 +131,56 @@ export const ChatProvider = ({ children }) => {
     setPaginationByConversation({});
     setTypingByConversation({});
     setActiveConversation(null);
+    setNotificationSettings({ muteAll: false, mutedUserIds: [] });
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    const loadNotificationSettings = async () => {
+      if (!user?.userId) {
+        return;
+      }
+
+      const raw = await AsyncStorage.getItem(
+        `${NOTIFICATION_SETTINGS_KEY}:${user.userId}`,
+      );
+      if (raw) {
+        setNotificationSettings(JSON.parse(raw));
+      }
+    };
+
+    loadNotificationSettings();
+  }, [user?.userId]);
+
+  const persistNotificationSettings = async (nextSettings) => {
+    setNotificationSettings(nextSettings);
+    if (user?.userId) {
+      await AsyncStorage.setItem(
+        `${NOTIFICATION_SETTINGS_KEY}:${user.userId}`,
+        JSON.stringify(nextSettings),
+      );
+    }
+  };
+
+  const setMuteAllNotifications = async (muteAll) => {
+    await persistNotificationSettings({
+      ...notificationSettings,
+      muteAll,
+    });
+  };
+
+  const toggleUserNotificationMute = async (userId) => {
+    const targetUserId = Number(userId);
+    const mutedUserIds = notificationSettings.mutedUserIds.includes(
+      targetUserId,
+    )
+      ? notificationSettings.mutedUserIds.filter((id) => id !== targetUserId)
+      : [...notificationSettings.mutedUserIds, targetUserId];
+
+    await persistNotificationSettings({
+      ...notificationSettings,
+      mutedUserIds,
+    });
+  };
 
   const updateConversationFromMessage = (conversationId, message) => {
     const otherUserId =
@@ -180,6 +240,36 @@ export const ChatProvider = ({ children }) => {
   useEffect(() => {
     const handleReceiveMessage = ({ conversationId, message }) => {
       mergeIncomingMessage(conversationId, message);
+      const shouldShowMessageNotification =
+        message.senderId !== user?.userId &&
+        !notificationSettings.muteAll &&
+        !notificationSettings.mutedUserIds.includes(Number(message.senderId));
+
+      if (shouldShowMessageNotification) {
+        const existingConversation = conversations.find(
+          (item) => item.conversationId === conversationId,
+        );
+        const sender = usersById[message.senderId] ||
+          existingConversation?.otherUser || {
+            username: t("chatNotificationNewMessage"),
+          };
+
+        showMessageNotification({
+          title:
+            existingConversation?.conversationType === "group"
+              ? t("chatNotificationGroupTitle", {
+                  sender: sender.username,
+                  group: existingConversation.title || t("commonGroupChat"),
+                })
+              : sender.username || t("chatNotificationNewMessage"),
+          message:
+            message.messageType === "image"
+              ? t("chatNotificationSentPhoto")
+              : message.content,
+          time: formatTime(message.createdAt || new Date().toISOString()),
+          avatarUser: sender,
+        });
+      }
       if (conversationId === activeConversation?.conversationId) {
         messagesApi.markDelivered(conversationId).catch(() => {});
       }
@@ -280,7 +370,17 @@ export const ChatProvider = ({ children }) => {
       off("presence:changed", handlePresence);
       off("message:read", handleMessageRead);
     };
-  }, [activeConversation, off, on, user, usersById]);
+  }, [
+    activeConversation,
+    conversations,
+    notificationSettings,
+    off,
+    on,
+    showMessageNotification,
+    t,
+    user,
+    usersById,
+  ]);
 
   const loadMessages = async (conversationId, options = {}) => {
     if (!conversationId) {
@@ -609,6 +709,7 @@ export const ChatProvider = ({ children }) => {
             .filter(Boolean)
         : [],
       searchResults,
+      notificationSettings,
       isLoading,
       refreshChatData,
       openConversation,
@@ -626,6 +727,8 @@ export const ChatProvider = ({ children }) => {
       uploadGroupAvatar,
       addGroupMembers,
       removeGroupMember,
+      setMuteAllNotifications,
+      toggleUserNotificationMute,
       searchMessages,
       startTyping,
       stopTyping,
@@ -640,6 +743,7 @@ export const ChatProvider = ({ children }) => {
       typingByConversation,
       usersById,
       searchResults,
+      notificationSettings,
       isLoading,
     ],
   );

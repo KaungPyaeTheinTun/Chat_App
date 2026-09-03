@@ -2,12 +2,8 @@ import React from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors } from "../styles/colors";
-
-const CHAT_BLUE = "#3b82f6";
-const CHAT_INPUT_BG = "#ffffff";
-const CHAT_BORDER = "#e6ebf2";
-const CHAT_SUBTEXT = "#8b93a5";
+import { useLocalization } from "../context/LocalizationContext";
+import { useTheme } from "../context/ThemeContext";
 
 export default function MessageInput({
   value,
@@ -18,14 +14,19 @@ export default function MessageInput({
   isEditing = false,
 }) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const { t } = useLocalization();
+  const hasText = Boolean(value.trim());
 
   return (
     <View
       style={{
-        paddingHorizontal: 14,
-        paddingTop: 10,
-        paddingBottom: Math.max(insets.bottom, 10),
-        backgroundColor: "#f6f7fb",
+        paddingHorizontal: 12,
+        paddingTop: 8,
+        paddingBottom: Math.max(insets.bottom, 8),
+        backgroundColor: colors.surface,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
       }}
     >
       <View style={composerShell}>
@@ -35,30 +36,44 @@ export default function MessageInput({
         >
           <Ionicons
             name={isEditing ? "close" : "add"}
-            size={22}
-            color={CHAT_BLUE}
+            size={23}
+            color={colors.subtext}
           />
         </Pressable>
 
-        <View style={inputShell}>
-          {isEditing ? <Text style={editingLabel}>Editing message</Text> : null}
+        <View style={[inputShell, { backgroundColor: colors.input }]}>
+          {isEditing ? (
+            <Text style={[editingLabel, { color: colors.primary }]}>
+              {t("chatEditingMessage")}
+            </Text>
+          ) : null}
           <TextInput
             value={value}
             onChangeText={onChangeText}
-            placeholder={isEditing ? "Edit message" : "Text message"}
-            placeholderTextColor={CHAT_SUBTEXT}
+            placeholder={
+              isEditing ? t("chatEditMessagePlaceholder") : t("chatTextMessage")
+            }
+            placeholderTextColor={colors.subtext}
             multiline
-            style={inputStyle}
+            style={[inputStyle, { color: colors.text }]}
           />
+          <Pressable
+            onPress={hasText || isEditing ? onPrimaryAction : undefined}
+            style={insideAction}
+          >
+            <Ionicons
+              name={isEditing || hasText ? "arrow-up-circle" : "mic-outline"}
+              size={22}
+              color={isEditing || hasText ? colors.primary : colors.subtext}
+            />
+          </Pressable>
         </View>
 
-        <Pressable onPress={onPrimaryAction} style={sendButton}>
-          <Ionicons
-            name={isEditing ? "checkmark" : "paper-plane"}
-            size={18}
-            color={colors.white}
-          />
-        </Pressable>
+        {!isEditing ? (
+          <Pressable onPress={onImageAction} style={iconButton}>
+            <Ionicons name="camera-outline" size={22} color={colors.subtext} />
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );
@@ -66,58 +81,47 @@ export default function MessageInput({
 
 const composerShell = {
   flexDirection: "row",
-  alignItems: "flex-end",
+  alignItems: "center",
 };
 
 const iconButton = {
-  width: 44,
-  height: 44,
-  borderRadius: 22,
+  width: 34,
+  height: 34,
+  borderRadius: 17,
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: colors.surface,
-  borderWidth: 1,
-  borderColor: CHAT_BORDER,
 };
 
 const inputShell = {
   flex: 1,
-  minHeight: 48,
-  marginHorizontal: 10,
-  paddingHorizontal: 16,
-  paddingVertical: 10,
-  borderRadius: 24,
-  backgroundColor: CHAT_INPUT_BG,
-  borderWidth: 1,
-  borderColor: CHAT_BORDER,
-  justifyContent: "center",
+  minHeight: 38,
+  marginHorizontal: 8,
+  paddingLeft: 16,
+  paddingRight: 6,
+  paddingVertical: 5,
+  borderRadius: 20,
+  flexDirection: "row",
+  alignItems: "center",
 };
 
 const editingLabel = {
   marginBottom: 4,
-  color: CHAT_BLUE,
   fontSize: 11,
   fontWeight: "700",
 };
 
 const inputStyle = {
+  flex: 1,
   minHeight: 24,
   maxHeight: 110,
   paddingVertical: 0,
-  color: colors.text,
   fontSize: 15,
 };
 
-const sendButton = {
-  width: 48,
-  height: 48,
-  borderRadius: 24,
+const insideAction = {
+  width: 32,
+  height: 32,
+  borderRadius: 16,
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: CHAT_BLUE,
-  shadowColor: "#000000",
-  shadowOpacity: 0.14,
-  shadowRadius: 10,
-  shadowOffset: { width: 0, height: 6 },
-  elevation: 5,
 };

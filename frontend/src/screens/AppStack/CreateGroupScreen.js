@@ -5,17 +5,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import UserAvatar from "../../components/UserAvatar";
 import { useToast, getErrorMessage } from "../../components/ToastProvider";
 import { useChat } from "../../context/ChatContext";
-
-const PAGE_BG = "#f6f7fb";
-const CARD_BG = "#ffffff";
-const TEXT = "#17191f";
-const SUBTEXT = "#8b93a5";
-const BLUE = "#3b82f6";
+import { useLocalization } from "../../context/LocalizationContext";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function CreateGroupScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const { showError, showSuccess } = useToast();
   const { users, createGroupConversation, openConversation } = useChat();
+  const { colors } = useTheme();
+  const { t } = useLocalization();
   const [groupTitle, setGroupTitle] = useState("");
   const [query, setQuery] = useState("");
   const [selectedMemberIds, setSelectedMemberIds] = useState([]);
@@ -52,20 +50,20 @@ export default function CreateGroupScreen({ navigation }) {
         memberIds: selectedMemberIds,
       });
       await openConversation(conversation);
-      showSuccess("Group created.");
+      showSuccess(t("createGroupCreated"));
       navigation.replace("ChatScreen", {
         title: conversation.title,
         peerUser: conversation.otherUser,
       });
     } catch (error) {
-      showError(getErrorMessage(error, "Unable to create group."));
+      showError(getErrorMessage(error, t("createGroupUnable")));
     } finally {
       setIsCreating(false);
     }
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: PAGE_BG }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View
         style={{
           paddingTop: insets.top + 12,
@@ -74,15 +72,20 @@ export default function CreateGroupScreen({ navigation }) {
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Pressable onPress={() => navigation.goBack()} style={backButton}>
-            <Ionicons name="chevron-back" size={24} color={TEXT} />
+          <Pressable
+            onPress={() => navigation.goBack()}
+            style={[backButton, { backgroundColor: colors.card }]}
+          >
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </Pressable>
           <View style={{ marginLeft: 12 }}>
-            <Text style={{ color: TEXT, fontSize: 24, fontWeight: "800" }}>
-              Create Group
+            <Text
+              style={{ color: colors.text, fontSize: 24, fontWeight: "700" }}
+            >
+              {t("createGroupTitle")}
             </Text>
-            <Text style={{ marginTop: 3, color: SUBTEXT }}>
-              Search usernames and add members
+            <Text style={{ marginTop: 3, color: colors.subtext }}>
+              {t("createGroupSubtitle")}
             </Text>
           </View>
         </View>
@@ -96,28 +99,54 @@ export default function CreateGroupScreen({ navigation }) {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={card}>
-          <Text style={label}>Group name</Text>
+        <View
+          style={[
+            card,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Text style={[label, { color: colors.text }]}>
+            {t("createGroupName")}
+          </Text>
           <TextInput
             value={groupTitle}
             onChangeText={setGroupTitle}
-            placeholder="Enter group name"
-            placeholderTextColor={SUBTEXT}
-            style={input}
+            placeholder={t("createGroupNamePlaceholder")}
+            placeholderTextColor={colors.subtext}
+            style={[
+              input,
+              { backgroundColor: colors.input, color: colors.text },
+            ]}
           />
 
-          <Text style={[label, { marginTop: 16 }]}>Search username</Text>
+          <Text style={[label, { marginTop: 16, color: colors.text }]}>
+            {t("commonSearchUsername")}
+          </Text>
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search people"
-            placeholderTextColor={SUBTEXT}
-            style={input}
+            placeholder={t("commonSearchPeople")}
+            placeholderTextColor={colors.subtext}
+            style={[
+              input,
+              { backgroundColor: colors.input, color: colors.text },
+            ]}
           />
         </View>
 
-        <View style={[card, { marginTop: 16 }]}>
-          <Text style={label}>Members</Text>
+        <View
+          style={[
+            card,
+            {
+              marginTop: 16,
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <Text style={[label, { color: colors.text }]}>
+            {t("commonMembers")}
+          </Text>
           {filteredUsers.length ? (
             filteredUsers.map((user) => {
               const isSelected = selectedMemberIds.includes(user.userId);
@@ -129,24 +158,26 @@ export default function CreateGroupScreen({ navigation }) {
                 >
                   <UserAvatar user={user} size={44} />
                   <View style={{ marginLeft: 12, flex: 1 }}>
-                    <Text style={{ color: TEXT, fontWeight: "800" }}>
+                    <Text style={{ color: colors.text, fontWeight: "800" }}>
                       {user.username}
                     </Text>
-                    <Text style={{ marginTop: 3, color: SUBTEXT }}>
-                      {user.status || "offline"}
+                    <Text style={{ marginTop: 3, color: colors.subtext }}>
+                      {user.status === "online"
+                        ? t("commonActiveNow")
+                        : t("commonOffline")}
                     </Text>
                   </View>
                   <Ionicons
                     name={isSelected ? "checkmark-circle" : "ellipse-outline"}
                     size={24}
-                    color={isSelected ? BLUE : SUBTEXT}
+                    color={isSelected ? colors.primary : colors.subtext}
                   />
                 </Pressable>
               );
             })
           ) : (
-            <Text style={{ marginTop: 12, color: SUBTEXT }}>
-              No users found.
+            <Text style={{ marginTop: 12, color: colors.subtext }}>
+              {t("commonNoUsersFound")}
             </Text>
           )}
         </View>
@@ -158,13 +189,13 @@ export default function CreateGroupScreen({ navigation }) {
             {
               backgroundColor:
                 groupTitle.trim() && selectedMemberIds.length
-                  ? BLUE
+                  ? colors.primary
                   : "#c8d7f8",
             },
           ]}
         >
           <Text style={{ color: "#ffffff", fontWeight: "800" }}>
-            {isCreating ? "Creating..." : "Create Group"}
+            {isCreating ? t("commonCreating") : t("createGroupTitle")}
           </Text>
         </Pressable>
       </ScrollView>
@@ -178,19 +209,15 @@ const backButton = {
   borderRadius: 21,
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: CARD_BG,
 };
 
 const card = {
   padding: 16,
   borderRadius: 24,
-  backgroundColor: CARD_BG,
   borderWidth: 1,
-  borderColor: "#eef1f5",
 };
 
 const label = {
-  color: TEXT,
   fontSize: 14,
   fontWeight: "800",
 };
@@ -200,8 +227,6 @@ const input = {
   paddingHorizontal: 14,
   paddingVertical: 13,
   borderRadius: 16,
-  backgroundColor: PAGE_BG,
-  color: TEXT,
 };
 
 const memberRow = {

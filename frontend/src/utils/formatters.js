@@ -63,19 +63,23 @@ export const formatDateLabel = (value) => {
   });
 };
 
-export const conversationPreview = (conversation) => {
+export const conversationPreview = (conversation, t) => {
   const lastMessage = conversation?.lastMessage;
   if (!lastMessage) {
-    return "Start a conversation";
+    return t ? t("conversationPreviewStart") : "Start a conversation";
   }
 
   if (lastMessage.localStatus === "failed") {
-    return "Failed to send. Tap to retry.";
+    return t ? t("conversationPreviewFailed") : "Failed to send. Tap to retry.";
   }
 
   if (lastMessage.localStatus === "pending") {
-    return "Sending...";
+    return t ? t("conversationPreviewSending") : "Sending...";
   }
 
-  return lastMessage.messageType === "image" ? "Photo" : lastMessage.content;
+  return lastMessage.messageType === "image"
+    ? t
+      ? t("commonPhoto")
+      : "Photo"
+    : lastMessage.content;
 };

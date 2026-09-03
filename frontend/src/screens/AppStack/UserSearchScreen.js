@@ -4,15 +4,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import UserAvatar from "../../components/UserAvatar";
 import { useChat } from "../../context/ChatContext";
-
-const PAGE_BG = "#f6f7fb";
-const CARD_BG = "#ffffff";
-const TEXT = "#17191f";
-const SUBTEXT = "#8b93a5";
+import { useLocalization } from "../../context/LocalizationContext";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function UserSearchScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const { users, openConversation } = useChat();
+  const { colors } = useTheme();
+  const { t } = useLocalization();
   const [query, setQuery] = useState("");
 
   const filteredUsers = useMemo(() => {
@@ -35,7 +34,7 @@ export default function UserSearchScreen({ navigation }) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: PAGE_BG }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View
         style={{
           paddingTop: insets.top + 12,
@@ -44,8 +43,11 @@ export default function UserSearchScreen({ navigation }) {
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Pressable onPress={() => navigation.goBack()} style={backButton}>
-            <Ionicons name="chevron-back" size={24} color={TEXT} />
+          <Pressable
+            onPress={() => navigation.goBack()}
+            style={[backButton, { backgroundColor: colors.card }]}
+          >
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </Pressable>
           <View
             style={{
@@ -56,22 +58,26 @@ export default function UserSearchScreen({ navigation }) {
               flexDirection: "row",
               alignItems: "center",
               paddingHorizontal: 16,
-              backgroundColor: CARD_BG,
+              backgroundColor: colors.card,
               borderWidth: 1,
-              borderColor: "#eef1f5",
+              borderColor: colors.border,
             }}
           >
-            <Ionicons name="person-add-outline" size={19} color={SUBTEXT} />
+            <Ionicons
+              name="person-add-outline"
+              size={19}
+              color={colors.subtext}
+            />
             <TextInput
               autoFocus
               value={query}
               onChangeText={setQuery}
-              placeholder="Search username"
-              placeholderTextColor={SUBTEXT}
+              placeholder={t("commonSearchUsername")}
+              placeholderTextColor={colors.subtext}
               style={{
                 flex: 1,
                 marginLeft: 10,
-                color: TEXT,
+                color: colors.text,
                 fontSize: 15,
               }}
             />
@@ -92,24 +98,43 @@ export default function UserSearchScreen({ navigation }) {
             <Pressable
               key={user.userId}
               onPress={() => handleOpenUser(user)}
-              style={userRow}
+              style={[
+                userRow,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
             >
               <UserAvatar user={user} size={50} />
               <View style={{ marginLeft: 12, flex: 1 }}>
-                <Text style={{ color: TEXT, fontSize: 16, fontWeight: "800" }}>
+                <Text
+                  style={{
+                    color: colors.text,
+                    fontSize: 16,
+                    fontWeight: "800",
+                  }}
+                >
                   {user.username}
                 </Text>
-                <Text style={{ marginTop: 4, color: SUBTEXT }}>
-                  {user.status || "offline"}
+                <Text style={{ marginTop: 4, color: colors.subtext }}>
+                  {user.status === "online"
+                    ? t("commonActiveNow")
+                    : t("commonOffline")}
                 </Text>
               </View>
-              <Ionicons name="chatbubble-outline" size={20} color={SUBTEXT} />
+              <Ionicons
+                name="chatbubble-outline"
+                size={20}
+                color={colors.subtext}
+              />
             </Pressable>
           ))
         ) : (
-          <View style={emptyCard}>
-            <Text style={emptyTitle}>No users found</Text>
-            <Text style={emptyText}>Try a different username.</Text>
+          <View style={[emptyCard, { backgroundColor: colors.card }]}>
+            <Text style={[emptyTitle, { color: colors.text }]}>
+              {t("searchNoResults")}
+            </Text>
+            <Text style={[emptyText, { color: colors.subtext }]}>
+              {t("commonTryAnotherKeyword")}
+            </Text>
           </View>
         )}
       </ScrollView>
@@ -123,7 +148,6 @@ const backButton = {
   borderRadius: 21,
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: CARD_BG,
 };
 
 const userRow = {
@@ -132,9 +156,7 @@ const userRow = {
   borderRadius: 22,
   flexDirection: "row",
   alignItems: "center",
-  backgroundColor: CARD_BG,
   borderWidth: 1,
-  borderColor: "#eef1f5",
 };
 
 const emptyCard = {
@@ -142,17 +164,14 @@ const emptyCard = {
   padding: 22,
   borderRadius: 24,
   alignItems: "center",
-  backgroundColor: CARD_BG,
 };
 
 const emptyTitle = {
-  color: TEXT,
   fontSize: 18,
   fontWeight: "800",
 };
 
 const emptyText = {
   marginTop: 8,
-  color: SUBTEXT,
   textAlign: "center",
 };

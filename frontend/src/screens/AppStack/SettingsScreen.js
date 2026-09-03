@@ -2,62 +2,66 @@ import React, { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AppSwitch from "../../components/AppSwitch";
 import ConfirmationModal from "../../components/ConfirmationModal";
 import UserAvatar from "../../components/UserAvatar";
 import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
-
-const PAGE_BG = "#f6f7fb";
-const CARD_BG = "rgba(255,255,255,0.92)";
-const TEXT = "#17191f";
-const SUBTEXT = "#8b93a5";
-const DANGER = "#ef4444";
+import { useLocalization } from "../../context/LocalizationContext";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function SettingsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
   const { showSuccess } = useToast();
+  const { colors, isDark, toggleTheme } = useTheme();
+  const { t, language } = useLocalization();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const pendingFeature = (label) => {
-    showSuccess(`${label} will be available soon.`);
+    showSuccess(t("commonSoon", { label }));
   };
 
   const settingRows = [
     {
-      label: "Profile",
-      description: "Edit your account details and photo",
+      label: t("settingsProfile"),
+      description: t("settingsProfileDescription"),
       icon: "person-circle-outline",
       onPress: () => navigation.navigate("ProfileScreen"),
     },
     {
-      label: "Chat Settings",
-      description: "Themes, message behavior, and media",
-      icon: "chatbubble-ellipses-outline",
-      onPress: () => pendingFeature("Chat settings"),
+      label: t("settingsDarkMode"),
+      description: isDark
+        ? t("settingsDarkDescription")
+        : t("settingsLightDescription"),
+      icon: isDark ? "moon" : "sunny-outline",
+      right: <AppSwitch value={isDark} onValueChange={toggleTheme} />,
     },
     {
-      label: "Privacy & Security",
-      description: "Blocked users, sessions, and account safety",
+      label: t("settingsPrivacy"),
+      description: t("settingsPrivacyDescription"),
       icon: "shield-checkmark-outline",
-      onPress: () => pendingFeature("Privacy & security"),
+      onPress: () => pendingFeature(t("settingsPrivacy")),
     },
     {
-      label: "Notifications",
-      description: "Push notifications and mute rules",
+      label: t("settingsNotifications"),
+      description: t("settingsNotificationsDescription"),
       icon: "notifications-outline",
-      onPress: () => pendingFeature("Notifications"),
+      onPress: () => navigation.navigate("NotificationSettingsScreen"),
     },
     {
-      label: "Language",
-      description: "Choose your app language",
+      label: t("settingsLanguage"),
+      description:
+        language === "mm"
+          ? t("settingsLanguageDescriptionMm")
+          : t("settingsLanguageDescriptionEn"),
       icon: "language-outline",
-      onPress: () => pendingFeature("Language"),
+      onPress: () => navigation.navigate("LanguageSettingsScreen"),
     },
   ];
 
   return (
-    <View style={{ flex: 1, backgroundColor: PAGE_BG }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: 20,
@@ -66,66 +70,138 @@ export default function SettingsScreen({ navigation }) {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={{ color: TEXT, fontSize: 28, fontWeight: "900" }}>
-          Settings
+        <Text style={{ color: colors.text, fontSize: 28, fontWeight: "700" }}>
+          {t("settingsTitle")}
         </Text>
-        <Text style={{ marginTop: 6, color: SUBTEXT }}>
-          Manage your profile and app preferences.
+        <Text style={{ marginTop: 6, color: colors.subtext }}>
+          {t("settingsSubtitle")}
         </Text>
 
-        <View style={profileCard}>
+        <View
+          style={[
+            profileCard,
+            {
+              backgroundColor: colors.cardGlass,
+              borderColor: colors.border,
+            },
+          ]}
+        >
           <UserAvatar user={user} size={58} />
           <View style={{ marginLeft: 14, flex: 1 }}>
-            <Text style={{ color: TEXT, fontSize: 18, fontWeight: "900" }}>
+            <Text
+              style={{ color: colors.text, fontSize: 18, fontWeight: "700" }}
+            >
               {user?.username || "User"}
             </Text>
-            <Text style={{ marginTop: 4, color: SUBTEXT }}>{user?.email}</Text>
+            <Text style={{ marginTop: 4, color: colors.subtext }}>
+              {user?.email}
+            </Text>
           </View>
         </View>
 
-        <View style={menuCard}>
+        <View
+          style={[
+            menuCard,
+            {
+              backgroundColor: colors.cardGlass,
+              borderColor: colors.border,
+            },
+          ]}
+        >
           {settingRows.map((item, index) => (
             <View key={item.label}>
-              <Pressable onPress={item.onPress} style={menuRow}>
-                <View style={iconShell}>
-                  <Ionicons name={item.icon} size={21} color={TEXT} />
-                </View>
-                <View style={{ marginLeft: 12, flex: 1 }}>
-                  <Text
-                    style={{ color: TEXT, fontSize: 15, fontWeight: "900" }}
+              {item.right ? (
+                <View style={menuRow}>
+                  <View
+                    style={[iconShell, { backgroundColor: colors.iconSurface }]}
                   >
-                    {item.label}
-                  </Text>
-                  <Text
-                    numberOfLines={1}
-                    style={{ marginTop: 3, color: SUBTEXT, fontSize: 12 }}
-                  >
-                    {item.description}
-                  </Text>
+                    <Ionicons name={item.icon} size={21} color={colors.text} />
+                  </View>
+                  <View style={{ marginLeft: 12, flex: 1 }}>
+                    <Text
+                      style={{
+                        color: colors.text,
+                        fontSize: 15,
+                        fontWeight: "700",
+                      }}
+                    >
+                      {item.label}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        marginTop: 3,
+                        color: colors.subtext,
+                        fontSize: 12,
+                      }}
+                    >
+                      {item.description}
+                    </Text>
+                  </View>
+                  {item.right}
                 </View>
-                <Ionicons name="chevron-forward" size={18} color={SUBTEXT} />
-              </Pressable>
-              {index < settingRows.length - 1 ? <View style={divider} /> : null}
+              ) : (
+                <Pressable onPress={item.onPress} style={menuRow}>
+                  <View
+                    style={[iconShell, { backgroundColor: colors.iconSurface }]}
+                  >
+                    <Ionicons name={item.icon} size={21} color={colors.text} />
+                  </View>
+                  <View style={{ marginLeft: 12, flex: 1 }}>
+                    <Text
+                      style={{
+                        color: colors.text,
+                        fontSize: 15,
+                        fontWeight: "700",
+                      }}
+                    >
+                      {item.label}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        marginTop: 3,
+                        color: colors.subtext,
+                        fontSize: 12,
+                      }}
+                    >
+                      {item.description}
+                    </Text>
+                  </View>
+                  {item.right || (
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color={colors.subtext}
+                    />
+                  )}
+                </Pressable>
+              )}
+              {index < settingRows.length - 1 ? (
+                <View style={[divider, { backgroundColor: colors.divider }]} />
+              ) : null}
             </View>
           ))}
         </View>
 
         <Pressable
           onPress={() => setShowLogoutConfirm(true)}
-          style={logoutButton}
+          style={[logoutButton, { backgroundColor: colors.dangerSoft }]}
         >
-          <Ionicons name="log-out-outline" size={20} color={DANGER} />
-          <Text style={{ marginLeft: 8, color: DANGER, fontWeight: "900" }}>
-            Logout
+          <Ionicons name="log-out-outline" size={20} color={colors.danger} />
+          <Text
+            style={{ marginLeft: 8, color: colors.danger, fontWeight: "700" }}
+          >
+            {t("commonLogout")}
           </Text>
         </Pressable>
       </ScrollView>
 
       <ConfirmationModal
         visible={showLogoutConfirm}
-        title="Logout"
-        message="Are you sure you want to logout from this account?"
-        confirmLabel="Logout"
+        title={t("commonLogout")}
+        message={t("settingsLogoutMessage")}
+        confirmLabel={t("commonLogout")}
         danger
         icon="log-out-outline"
         onConfirm={async () => {
@@ -144,18 +220,14 @@ const profileCard = {
   borderRadius: 26,
   flexDirection: "row",
   alignItems: "center",
-  backgroundColor: CARD_BG,
   borderWidth: 1,
-  borderColor: "rgba(255,255,255,0.72)",
 };
 
 const menuCard = {
   marginTop: 18,
   borderRadius: 26,
   overflow: "hidden",
-  backgroundColor: CARD_BG,
   borderWidth: 1,
-  borderColor: "rgba(255,255,255,0.72)",
 };
 
 const menuRow = {
@@ -171,13 +243,11 @@ const iconShell = {
   borderRadius: 20,
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: "#f1f4f8",
 };
 
 const divider = {
   height: 1,
   marginLeft: 68,
-  backgroundColor: "rgba(60,60,67,0.13)",
 };
 
 const logoutButton = {
@@ -187,5 +257,4 @@ const logoutButton = {
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: "#fff1f2",
 };

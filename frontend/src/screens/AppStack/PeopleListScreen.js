@@ -4,15 +4,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import UserAvatar from "../../components/UserAvatar";
 import { useChat } from "../../context/ChatContext";
-
-const PAGE_BG = "#f6f7fb";
-const CARD_BG = "#ffffff";
-const TEXT = "#17191f";
-const SUBTEXT = "#8b93a5";
+import { useLocalization } from "../../context/LocalizationContext";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function PeopleListScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const { users, openConversation } = useChat();
+  const { colors } = useTheme();
+  const { t } = useLocalization();
   const [query, setQuery] = useState("");
 
   const filteredUsers = useMemo(() => {
@@ -36,7 +35,7 @@ export default function PeopleListScreen({ navigation }) {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: PAGE_BG }}
+      style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{
         paddingHorizontal: 20,
         paddingTop: insets.top + 18,
@@ -45,30 +44,35 @@ export default function PeopleListScreen({ navigation }) {
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      <Text style={{ color: TEXT, fontSize: 28, fontWeight: "800" }}>
-        People
+      <Text style={{ color: colors.text, fontSize: 28, fontWeight: "700" }}>
+        {t("peopleTitle")}
       </Text>
-      <Text style={{ marginTop: 6, color: SUBTEXT }}>
-        Search users and start a conversation.
+      <Text style={{ marginTop: 6, color: colors.subtext }}>
+        {t("peopleSubtitle")}
       </Text>
 
-      <View style={searchBox}>
-        <Ionicons name="search-outline" size={19} color={SUBTEXT} />
+      <View
+        style={[
+          searchBox,
+          { backgroundColor: colors.card, borderColor: colors.border },
+        ]}
+      >
+        <Ionicons name="search-outline" size={19} color={colors.subtext} />
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Search people"
-          placeholderTextColor={SUBTEXT}
+          placeholder={t("commonSearchPeople")}
+          placeholderTextColor={colors.subtext}
           style={{
             flex: 1,
             marginLeft: 10,
-            color: TEXT,
+            color: colors.text,
             fontSize: 15,
           }}
         />
       </View>
 
-      <View style={listCard}>
+      <View style={[listCard, { backgroundColor: colors.card }]}>
         {filteredUsers.length ? (
           filteredUsers.map((user) => (
             <Pressable
@@ -78,19 +82,33 @@ export default function PeopleListScreen({ navigation }) {
             >
               <UserAvatar user={user} size={52} />
               <View style={{ marginLeft: 12, flex: 1 }}>
-                <Text style={{ color: TEXT, fontSize: 16, fontWeight: "800" }}>
+                <Text
+                  style={{
+                    color: colors.text,
+                    fontSize: 16,
+                    fontWeight: "800",
+                  }}
+                >
                   {user.username}
                 </Text>
-                <Text style={{ marginTop: 4, color: SUBTEXT }}>
-                  {user.status || "offline"}
+                <Text style={{ marginTop: 4, color: colors.subtext }}>
+                  {user.status === "online"
+                    ? t("commonActiveNow")
+                    : t("commonOffline")}
                 </Text>
               </View>
-              <Ionicons name="chatbubble-outline" size={20} color={SUBTEXT} />
+              <Ionicons
+                name="chatbubble-outline"
+                size={20}
+                color={colors.subtext}
+              />
             </Pressable>
           ))
         ) : (
           <View style={{ paddingVertical: 18 }}>
-            <Text style={{ color: SUBTEXT }}>No people found.</Text>
+            <Text style={{ color: colors.subtext }}>
+              {t("commonNoPeopleFound")}
+            </Text>
           </View>
         )}
       </View>
@@ -105,9 +123,7 @@ const searchBox = {
   flexDirection: "row",
   alignItems: "center",
   paddingHorizontal: 16,
-  backgroundColor: CARD_BG,
   borderWidth: 1,
-  borderColor: "#eef1f5",
 };
 
 const listCard = {
@@ -115,7 +131,6 @@ const listCard = {
   paddingHorizontal: 14,
   paddingVertical: 8,
   borderRadius: 28,
-  backgroundColor: CARD_BG,
   shadowColor: "#000000",
   shadowOpacity: 0.04,
   shadowRadius: 14,

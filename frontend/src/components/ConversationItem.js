@@ -2,23 +2,22 @@ import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { FontAwesome6 } from "@expo/vector-icons";
 import UserAvatar from "./UserAvatar";
+import { useLocalization } from "../context/LocalizationContext";
+import { useTheme } from "../context/ThemeContext";
 import { conversationPreview, formatDateLabel } from "../utils/formatters";
-
-const CHAT_BLUE = "#3b82f6";
-const CHAT_TEXT = "#16181d";
-const CHAT_SUBTEXT = "#7f8796";
-const CHAT_ROW_BG = "#ffffff";
 
 export default function ConversationItem({
   conversation,
   onPress,
   onLongPress,
 }) {
+  const { colors } = useTheme();
+  const { t } = useLocalization();
   const otherUser = conversation.otherUser;
   const title =
     conversation.conversationType === "group"
-      ? conversation.title || "Group chat"
-      : otherUser?.username || "Unknown user";
+      ? conversation.title || t("commonGroupChat")
+      : otherUser?.username || t("commonConversation");
   const unreadCount = Number(conversation.unreadCount || 0);
   const isUnread = unreadCount > 0;
   const dateLabel = formatDateLabel(
@@ -33,9 +32,9 @@ export default function ConversationItem({
       style={{
         flexDirection: "row",
         alignItems: "center",
-        paddingVertical: 12,
+        paddingVertical: 8,
         paddingHorizontal: 2,
-        marginTop: 10,
+        marginTop: 4,
       }}
     >
       <View style={{ marginRight: 14 }}>
@@ -45,7 +44,7 @@ export default function ConversationItem({
               ? { username: title, avatarUrl: conversation.avatarUrl }
               : otherUser
           }
-          size={54}
+          size={50}
         />
         <View
           style={{
@@ -58,7 +57,7 @@ export default function ConversationItem({
             backgroundColor:
               otherUser?.status === "online" ? "#41c95c" : "#d7dbe3",
             borderWidth: 2,
-            borderColor: CHAT_ROW_BG,
+            borderColor: colors.background,
           }}
         />
       </View>
@@ -71,7 +70,7 @@ export default function ConversationItem({
               flexShrink: 1,
               fontSize: 17,
               fontWeight: "700",
-              color: CHAT_TEXT,
+              color: colors.text,
             }}
           >
             {title}
@@ -80,7 +79,7 @@ export default function ConversationItem({
             <FontAwesome6
               name="volume-xmark"
               size={15}
-              color="#9aa3b2"
+              color={colors.subtext}
               style={{ marginLeft: 6 }}
             />
           ) : null}
@@ -89,24 +88,28 @@ export default function ConversationItem({
           numberOfLines={1}
           style={{
             marginTop: 4,
-            color: isUnread ? CHAT_TEXT : CHAT_SUBTEXT,
+            color: isUnread ? colors.text : colors.subtext,
             fontWeight: isUnread ? "600" : "400",
           }}
         >
-          {conversationPreview(conversation)}
+          {conversationPreview(conversation, t)}
         </Text>
       </View>
 
       <View style={{ alignItems: "flex-end", marginLeft: 12 }}>
         {conversation.isPinned ? (
-          <View style={pinDateBadge}>
-            <FontAwesome6 name="thumbtack" size={13} color="#687486" />
-            <Text style={pinDateText}>{dateLabel}</Text>
+          <View
+            style={[pinDateBadge, { backgroundColor: colors.surfaceMuted }]}
+          >
+            <FontAwesome6 name="thumbtack" size={13} color={colors.subtext} />
+            <Text style={[pinDateText, { color: colors.subtext }]}>
+              {dateLabel}
+            </Text>
           </View>
         ) : (
           <Text
             style={{
-              color: isUnread ? CHAT_SUBTEXT : "#a0a7b4",
+              color: colors.subtext,
               fontSize: 11,
               fontWeight: isUnread ? "600" : "500",
             }}
@@ -124,7 +127,7 @@ export default function ConversationItem({
               borderRadius: 11.5,
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: CHAT_BLUE,
+              backgroundColor: colors.primary,
             }}
           >
             <Text
@@ -151,12 +154,10 @@ const pinDateBadge = {
   paddingHorizontal: 8,
   paddingVertical: 5,
   borderRadius: 999,
-  backgroundColor: "#edf1f7",
 };
 
 const pinDateText = {
   marginLeft: 4,
-  color: "#687486",
   fontSize: 11,
   fontWeight: "700",
 };

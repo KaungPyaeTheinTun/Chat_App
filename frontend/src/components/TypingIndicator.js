@@ -1,16 +1,22 @@
 import React from "react";
 import { Text, View } from "react-native";
-import { colors } from "../styles/colors";
+import { useLocalization } from "../context/LocalizationContext";
+import { useTheme } from "../context/ThemeContext";
 
 export default function TypingIndicator({ users = [] }) {
+  const { colors } = useTheme();
+  const { t } = useLocalization();
+
   if (!users.length) {
     return null;
   }
 
   const label =
     users.length === 1
-      ? `${users[0].username} is typing...`
-      : `${users.map((user) => user.username).join(", ")} are typing...`;
+      ? t("chatTypingOne", { name: users[0].username })
+      : t("chatTypingMany", {
+          names: users.map((user) => user.username).join(", "),
+        });
 
   return (
     <View
@@ -21,14 +27,14 @@ export default function TypingIndicator({ users = [] }) {
         paddingHorizontal: 14,
         paddingVertical: 8,
         borderRadius: 18,
-        backgroundColor: "#ffffff",
+        backgroundColor: colors.card,
         borderWidth: 1,
-        borderColor: "#edf1f6",
+        borderColor: colors.border,
       }}
     >
       <Text
         style={{
-          color: "#8b93a5",
+          color: colors.subtext,
           fontStyle: "italic",
           fontSize: 12,
         }}

@@ -24,18 +24,19 @@ import UserAvatar from "../../components/UserAvatar";
 import { useToast, getErrorMessage } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
 import { useChat } from "../../context/ChatContext";
-import { colors } from "../../styles/colors";
+import { useLocalization } from "../../context/LocalizationContext";
+import { useTheme } from "../../context/ThemeContext";
 import { resolveMediaUrl } from "../../utils/media";
 
 const REACTIONS = ["🔥", "🙌", "😭", "🙈", "🙏", "😬", "✨", "＋"];
-const CHAT_BG = "#f4f6fb";
-const CHAT_ICON = "#7a8292";
 
 export default function ChatScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const { user } = useAuth();
   const { showError, showSuccess } = useToast();
+  const { colors, isDark } = useTheme();
+  const { t } = useLocalization();
   const {
     activeConversation,
     activeMessages,
@@ -54,7 +55,7 @@ export default function ChatScreen({ route, navigation }) {
   const peerUser = activeConversation?.otherUser || route.params?.peerUser;
   const conversationTitle =
     activeConversation?.conversationType === "group"
-      ? activeConversation?.title || "Group chat"
+      ? activeConversation?.title || t("commonGroupChat")
       : peerUser?.username;
   const conversationAvatar =
     activeConversation?.conversationType === "group"
@@ -162,7 +163,7 @@ export default function ChatScreen({ route, navigation }) {
     try {
       if (editingMessage) {
         await editMessage(editingMessage.messageId, content);
-        showSuccess("Message updated.");
+        showSuccess(t("chatMessageUpdated"));
       } else {
         await sendMessage({
           receiverId: peerUser?.userId,
@@ -177,9 +178,7 @@ export default function ChatScreen({ route, navigation }) {
       showError(
         getErrorMessage(
           error,
-          editingMessage
-            ? "Unable to edit message."
-            : "Unable to send message.",
+          editingMessage ? t("chatUnableEdit") : t("chatUnableSend"),
         ),
       );
     }
@@ -194,7 +193,7 @@ export default function ChatScreen({ route, navigation }) {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permission.granted) {
-      showError("Photo library permission is required.");
+      showError(t("chatPhotoPermission"));
       return;
     }
 
@@ -215,7 +214,7 @@ export default function ChatScreen({ route, navigation }) {
         asset: result.assets[0],
       });
     } catch (error) {
-      showError(getErrorMessage(error, "Unable to send image."));
+      showError(getErrorMessage(error, t("chatUnableSendImage")));
     }
   };
 
@@ -234,7 +233,7 @@ export default function ChatScreen({ route, navigation }) {
 
     if (!selectedMessage.isMine) {
       closeMessageMenu();
-      showError("You can only edit your own messages.");
+      showError(t("chatOnlyEditOwn"));
       return;
     }
 
@@ -250,7 +249,7 @@ export default function ChatScreen({ route, navigation }) {
 
     if (!selectedMessage.isMine) {
       closeMessageMenu();
-      showError("You can only delete your own messages.");
+      showError(t("chatOnlyDeleteOwn"));
       return;
     }
 
@@ -258,17 +257,17 @@ export default function ChatScreen({ route, navigation }) {
     closeMessageMenu();
 
     setConfirmation({
-      title: "Delete message",
-      message: "Are you sure you want to delete this message?",
-      confirmLabel: "Delete",
+      title: t("chatDeleteMessage"),
+      message: t("chatDeleteMessageConfirm"),
+      confirmLabel: t("commonDelete"),
       icon: "trash-outline",
       onConfirm: async () => {
         setConfirmation(null);
         try {
           await deleteMessage(messageToDelete.messageId);
-          showSuccess("Message deleted.");
+          showSuccess(t("chatMessageDeleted"));
         } catch (error) {
-          showError(getErrorMessage(error, "Unable to delete message."));
+          showError(getErrorMessage(error, t("chatUnableDelete")));
         }
       },
     });
@@ -290,12 +289,12 @@ export default function ChatScreen({ route, navigation }) {
 
   const handleReactionPress = (reaction) => {
     closeMessageMenu();
-    showSuccess(`${reaction} reactions will be available soon.`);
+    showSuccess(t("chatReactionSoon", { reaction }));
   };
 
   const handlePendingAction = (label) => {
     closeMessageMenu();
-    showSuccess(`${label} will be available soon.`);
+    showSuccess(t("chatFeatureSoon", { label }));
   };
 
   const menuActions = useMemo(() => {
@@ -308,7 +307,7 @@ export default function ChatScreen({ route, navigation }) {
     if (selectedMessage.message.messageType === "image") {
       actions.push({
         key: "open",
-        label: "Open image",
+        label: t("chatOpenImage"),
         icon: "expand-outline",
         color: colors.text,
         onPress: openSelectedImage,
@@ -318,7 +317,7 @@ export default function ChatScreen({ route, navigation }) {
     if (selectedMessage.message.messageType !== "image") {
       actions.push({
         key: "edit",
-        label: "Edit",
+        label: t("chatEdit"),
         icon: "create-outline",
         color: colors.text,
         onPress: beginEdit,
@@ -328,49 +327,49 @@ export default function ChatScreen({ route, navigation }) {
     actions.push(
       {
         key: "copy",
-        label: "Copy",
+        label: t("chatCopy"),
         icon: "copy-outline",
         color: colors.text,
-        onPress: () => handlePendingAction("Copy"),
+        onPress: () => handlePendingAction(t("chatCopy")),
       },
       {
         key: "reply",
-        label: "Reply",
+        label: t("chatReply"),
         icon: "return-up-back-outline",
         color: colors.text,
-        onPress: () => handlePendingAction("Reply"),
+        onPress: () => handlePendingAction(t("chatReply")),
       },
       {
         key: "forward",
-        label: "Forward",
+        label: t("chatForward"),
         icon: "arrow-redo-outline",
         color: colors.text,
-        onPress: () => handlePendingAction("Forward"),
+        onPress: () => handlePendingAction(t("chatForward")),
       },
     );
 
     actions.push({
       key: "delete",
-      label: "Delete",
+      label: t("commonDelete"),
       icon: "trash-outline",
       color: colors.danger,
       onPress: confirmDelete,
     });
 
     return actions;
-  }, [selectedMessage]);
+  }, [colors.danger, colors.text, selectedMessage, t]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: CHAT_BG }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={{ flex: 1 }}>
         <View
           style={{
             paddingTop: insets.top + 6,
             paddingHorizontal: 16,
             paddingBottom: 10,
-            backgroundColor: "#ffffff",
+            backgroundColor: colors.surface,
             borderBottomWidth: 1,
-            borderBottomColor: "#edf1f6",
+            borderBottomColor: colors.border,
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -385,7 +384,7 @@ export default function ChatScreen({ route, navigation }) {
                 marginRight: 10,
               }}
             >
-              <Ionicons name="chevron-back" size={24} color="#17191f" />
+              <Ionicons name="chevron-back" size={24} color={colors.text} />
             </Pressable>
 
             <Pressable onPress={openConversationProfile}>
@@ -393,25 +392,51 @@ export default function ChatScreen({ route, navigation }) {
             </Pressable>
             <View style={{ marginLeft: 12, flex: 1 }}>
               <Text
-                style={{ fontSize: 17, fontWeight: "700", color: "#17191f" }}
+                style={{
+                  fontSize: 17,
+                  fontWeight: "700",
+                  color: colors.text,
+                }}
               >
                 {conversationTitle}
               </Text>
-              <Text style={{ marginTop: 3, color: CHAT_ICON, fontSize: 12 }}>
+              <Text
+                style={{ marginTop: 3, color: colors.subtext, fontSize: 12 }}
+              >
                 {activeConversation?.conversationType === "group"
-                  ? `${activeConversation?.members?.length || 0} members`
+                  ? t("commonMembersCount", {
+                      count: activeConversation?.members?.length || 0,
+                    })
                   : peerUser?.status === "online"
-                    ? "Active now"
-                    : "Offline"}
+                    ? t("commonActiveNow")
+                    : t("commonOffline")}
               </Text>
             </View>
 
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <View style={headerIconShell}>
-                <Ionicons name="videocam-outline" size={20} color={CHAT_ICON} />
+              <View
+                style={[
+                  headerIconShell,
+                  { backgroundColor: colors.iconSurface },
+                ]}
+              >
+                <Ionicons
+                  name="videocam-outline"
+                  size={20}
+                  color={colors.subtext}
+                />
               </View>
-              <View style={[headerIconShell, { marginLeft: 8 }]}>
-                <Ionicons name="call-outline" size={18} color={CHAT_ICON} />
+              <View
+                style={[
+                  headerIconShell,
+                  { marginLeft: 8, backgroundColor: colors.iconSurface },
+                ]}
+              >
+                <Ionicons
+                  name="call-outline"
+                  size={18}
+                  color={colors.subtext}
+                />
               </View>
             </View>
           </View>
@@ -448,13 +473,13 @@ export default function ChatScreen({ route, navigation }) {
                   paddingHorizontal: 14,
                   paddingVertical: 8,
                   borderRadius: 16,
-                  backgroundColor: "#ffffff",
+                  backgroundColor: colors.card,
                   borderWidth: 1,
-                  borderColor: "#edf1f6",
+                  borderColor: colors.border,
                 }}
               >
-                <Text style={{ color: CHAT_ICON, fontWeight: "700" }}>
-                  Load older messages
+                <Text style={{ color: colors.subtext, fontWeight: "700" }}>
+                  {t("chatLoadOlder")}
                 </Text>
               </Pressable>
             ) : null
@@ -478,7 +503,7 @@ export default function ChatScreen({ route, navigation }) {
                   lineHeight: 20,
                 }}
               >
-                No messages yet. Start the conversation.
+                {t("chatEmpty")}
               </Text>
             </View>
           }
@@ -503,8 +528,7 @@ export default function ChatScreen({ route, navigation }) {
           <TypingIndicator users={editingMessage ? [] : typingUsers} />
           <View
             style={{
-              marginHorizontal: 10,
-              backgroundColor: CHAT_BG,
+              backgroundColor: colors.surface,
             }}
           >
             <MessageInput
@@ -583,7 +607,7 @@ export default function ChatScreen({ route, navigation }) {
         onRequestClose={closeMessageMenu}
       >
         <BlurView
-          tint="light"
+          tint={isDark ? "dark" : "light"}
           intensity={55}
           style={StyleSheet.absoluteFillObject}
         />
@@ -592,7 +616,7 @@ export default function ChatScreen({ route, navigation }) {
           style={{
             flex: 1,
             justifyContent: "flex-end",
-            backgroundColor: "rgba(0,0,0,0.12)",
+            backgroundColor: colors.overlay,
           }}
         >
           <View
@@ -602,7 +626,7 @@ export default function ChatScreen({ route, navigation }) {
               marginBottom: Math.max(insets.bottom + 10, 24),
               borderRadius: 26,
               overflow: "hidden",
-              backgroundColor: "#ffffff",
+              backgroundColor: colors.card,
               shadowColor: "#000000",
               shadowOpacity: 0.2,
               shadowRadius: 30,
@@ -621,19 +645,19 @@ export default function ChatScreen({ route, navigation }) {
                     paddingHorizontal: 14,
                     paddingVertical: 12,
                     borderRadius: 16,
-                    backgroundColor: "#f5f6f8",
+                    backgroundColor: colors.surfaceMuted,
                   }}
                 >
                   <Text
                     numberOfLines={3}
                     style={{
-                      color: "#17191f",
+                      color: colors.text,
                       lineHeight: 19,
                       fontWeight: "500",
                     }}
                   >
                     {selectedMessage.message.messageType === "image"
-                      ? "Image message"
+                      ? t("commonImageMessage")
                       : selectedMessage.message.content}
                   </Text>
                 </View>
@@ -643,7 +667,7 @@ export default function ChatScreen({ route, navigation }) {
             <View style={{ paddingHorizontal: 14, paddingTop: 14 }}>
               <Text
                 style={{
-                  color: "#2d3038",
+                  color: colors.text,
                   fontSize: 13,
                   fontWeight: "800",
                 }}
@@ -671,7 +695,9 @@ export default function ChatScreen({ route, navigation }) {
             </View>
 
             <View style={{ marginTop: 6 }}>
-              <View style={menuDivider} />
+              <View
+                style={[menuDivider, { backgroundColor: colors.divider }]}
+              />
             </View>
             {menuActions.map((action, index) => (
               <View key={action.key}>
@@ -682,7 +708,9 @@ export default function ChatScreen({ route, navigation }) {
                   <Ionicons name={action.icon} size={20} color={action.color} />
                 </Pressable>
                 {index < menuActions.length - 1 ? (
-                  <View style={menuDivider} />
+                  <View
+                    style={[menuDivider, { backgroundColor: colors.divider }]}
+                  />
                 ) : null}
               </View>
             ))}
@@ -715,12 +743,10 @@ const menuItem = {
 const menuText = {
   fontSize: 15,
   fontWeight: "600",
-  color: colors.text,
 };
 
 const menuDivider = {
   height: 1,
-  backgroundColor: "rgba(60,60,67,0.14)",
 };
 
 const sheetReactionButton = {
@@ -740,5 +766,4 @@ const headerIconShell = {
   borderRadius: 18,
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: "#f6f7fb",
 };

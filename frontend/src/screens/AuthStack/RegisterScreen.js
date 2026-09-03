@@ -11,18 +11,15 @@ import { Ionicons } from "@expo/vector-icons";
 import SocialAuthButton from "../../components/SocialAuthButton";
 import { useToast, getErrorMessage } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
+import { useLocalization } from "../../context/LocalizationContext";
+import { useTheme } from "../../context/ThemeContext";
 import { isEmail, isRequired, isStrongPassword } from "../../utils/validators";
-
-const PAGE_BG = "#f6f7fb";
-const CARD_BG = "rgba(255,255,255,0.92)";
-const TEXT = "#17191f";
-const SUBTEXT = "#8b93a5";
-const BLUE = "#3b82f6";
-const BORDER = "#eef1f5";
 
 export default function RegisterScreen({ navigation }) {
   const { register } = useAuth();
   const { showError, showSuccess } = useToast();
+  const { colors } = useTheme();
+  const { t } = useLocalization();
   const [form, setForm] = useState({
     username: "",
     email: "",
@@ -40,7 +37,7 @@ export default function RegisterScreen({ navigation }) {
       !isEmail(form.email) ||
       !isStrongPassword(form.password)
     ) {
-      showError("Please complete every required field correctly.");
+      showError(t("authInvalidRegister"));
       return;
     }
 
@@ -51,20 +48,20 @@ export default function RegisterScreen({ navigation }) {
         email: form.email.trim(),
         password: form.password,
       });
-      showSuccess("Account created successfully.");
+      showSuccess(t("authCreated"));
     } catch (error) {
-      showError(getErrorMessage(error, "Unable to register."));
+      showError(getErrorMessage(error, t("authUnableRegister")));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const showSocialPlaceholder = (provider) => {
-    showSuccess(`${provider} social login will be available soon.`);
+    showSuccess(t("authSocialSoon", { provider }));
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: PAGE_BG }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
@@ -77,36 +74,36 @@ export default function RegisterScreen({ navigation }) {
         <View style={{ alignItems: "center", marginBottom: 18 }}>
           <Text
             style={{
-              color: SUBTEXT,
+              color: colors.subtext,
               fontWeight: "700",
               letterSpacing: 1,
             }}
           >
-            CREATE ACCOUNT
+            {t("authCreateAccountKicker")}
           </Text>
           <Text
             style={{
               marginTop: 10,
               fontSize: 34,
-              fontWeight: "900",
-              color: TEXT,
+              fontWeight: "700",
+              color: colors.text,
             }}
           >
-            Create account
+            {t("authCreateAccount")}
           </Text>
-          <Text style={{ marginTop: 8, color: SUBTEXT }}>
-            Start chatting with your people.
+          <Text style={{ marginTop: 8, color: colors.subtext }}>
+            {t("authRegisterSubtitle")}
           </Text>
         </View>
 
         <View
           style={{
-            backgroundColor: CARD_BG,
+            backgroundColor: colors.cardGlass,
             borderRadius: 34,
             paddingHorizontal: 18,
             paddingVertical: 24,
             borderWidth: 1,
-            borderColor: "rgba(255,255,255,0.72)",
+            borderColor: colors.border,
             shadowColor: "#000000",
             shadowOpacity: 0.08,
             shadowRadius: 24,
@@ -117,40 +114,65 @@ export default function RegisterScreen({ navigation }) {
           <TextInput
             value={form.username}
             onChangeText={(text) => updateField("username", text)}
-            placeholder="Username"
-            placeholderTextColor={SUBTEXT}
-            style={inputStyle}
+            placeholder={t("profileUsername")}
+            placeholderTextColor={colors.subtext}
+            style={[
+              inputStyle,
+              {
+                borderColor: colors.border,
+                backgroundColor: colors.input,
+                color: colors.text,
+              },
+            ]}
           />
           <TextInput
             value={form.email}
             onChangeText={(text) => updateField("email", text)}
-            placeholder="Email"
-            placeholderTextColor={SUBTEXT}
+            placeholder={t("authEmail")}
+            placeholderTextColor={colors.subtext}
             autoCapitalize="none"
             keyboardType="email-address"
-            style={inputStyle}
+            style={[
+              inputStyle,
+              {
+                borderColor: colors.border,
+                backgroundColor: colors.input,
+                color: colors.text,
+              },
+            ]}
           />
-          <View style={passwordWrapStyle}>
+          <View
+            style={[
+              passwordWrapStyle,
+              {
+                borderColor: colors.border,
+                backgroundColor: colors.input,
+              },
+            ]}
+          >
             <TextInput
               value={form.password}
               onChangeText={(text) => updateField("password", text)}
-              placeholder="Password"
-              placeholderTextColor={SUBTEXT}
+              placeholder={t("authPassword")}
+              placeholderTextColor={colors.subtext}
               secureTextEntry={!showPassword}
-              style={passwordInputStyle}
+              style={[passwordInputStyle, { color: colors.text }]}
             />
             <Pressable onPress={() => setShowPassword((current) => !current)}>
               <Ionicons
                 name={showPassword ? "eye-off-outline" : "eye-outline"}
                 size={20}
-                color={SUBTEXT}
+                color={colors.subtext}
               />
             </Pressable>
           </View>
 
-          <Pressable onPress={handleRegister} style={primaryButton}>
+          <Pressable
+            onPress={handleRegister}
+            style={[primaryButton, { backgroundColor: colors.primary }]}
+          >
             <Text style={{ color: "#ffffff", fontWeight: "800" }}>
-              {isSubmitting ? "Creating..." : "Create account"}
+              {isSubmitting ? t("commonCreating") : t("authCreateAccount")}
             </Text>
           </Pressable>
 
@@ -161,26 +183,26 @@ export default function RegisterScreen({ navigation }) {
               marginTop: 20,
             }}
           >
-            <View style={dividerLine} />
+            <View style={[dividerLine, { backgroundColor: colors.border }]} />
             <Text
               style={{
                 marginHorizontal: 12,
-                color: SUBTEXT,
+                color: colors.subtext,
                 fontWeight: "700",
               }}
             >
-              or
+              {t("authOr")}
             </Text>
-            <View style={dividerLine} />
+            <View style={[dividerLine, { backgroundColor: colors.border }]} />
           </View>
 
           <SocialAuthButton
-            label="Continue with Google"
+            label={t("authGoogle")}
             icon="google"
             onPress={() => showSocialPlaceholder("Google")}
           />
           <SocialAuthButton
-            label="Continue with GitHub"
+            label={t("authGithub")}
             icon="github"
             variant="soft"
             onPress={() => showSocialPlaceholder("GitHub")}
@@ -190,9 +212,11 @@ export default function RegisterScreen({ navigation }) {
             onPress={() => navigation.goBack()}
             style={{ marginTop: 18, alignSelf: "center" }}
           >
-            <Text style={{ color: SUBTEXT, fontSize: 13 }}>
-              Already have an account?{" "}
-              <Text style={{ color: BLUE, fontWeight: "800" }}>Login</Text>
+            <Text style={{ color: colors.subtext, fontSize: 13 }}>
+              {t("authAlreadyAccount")}{" "}
+              <Text style={{ color: colors.primary, fontWeight: "800" }}>
+                {t("authLogin")}
+              </Text>
             </Text>
           </Pressable>
         </View>
@@ -207,9 +231,6 @@ const inputStyle = {
   paddingVertical: 14,
   borderRadius: 999,
   borderWidth: 1,
-  borderColor: BORDER,
-  backgroundColor: "rgba(255,255,255,0.78)",
-  color: TEXT,
 };
 
 const passwordWrapStyle = {
@@ -217,9 +238,6 @@ const passwordWrapStyle = {
   paddingHorizontal: 18,
   borderRadius: 999,
   borderWidth: 1,
-  borderColor: BORDER,
-  backgroundColor: "rgba(255,255,255,0.78)",
-  color: TEXT,
   flexDirection: "row",
   alignItems: "center",
 };
@@ -227,7 +245,6 @@ const passwordWrapStyle = {
 const passwordInputStyle = {
   flex: 1,
   paddingVertical: 14,
-  color: TEXT,
 };
 
 const primaryButton = {
@@ -235,11 +252,9 @@ const primaryButton = {
   paddingVertical: 15,
   borderRadius: 999,
   alignItems: "center",
-  backgroundColor: BLUE,
 };
 
 const dividerLine = {
   flex: 1,
   height: 1,
-  backgroundColor: BORDER,
 };

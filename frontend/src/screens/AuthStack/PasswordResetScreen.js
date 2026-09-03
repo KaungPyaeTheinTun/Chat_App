@@ -8,30 +8,27 @@ import {
   View,
 } from "react-native";
 import { useToast } from "../../components/ToastProvider";
+import { useLocalization } from "../../context/LocalizationContext";
+import { useTheme } from "../../context/ThemeContext";
 import { isEmail } from "../../utils/validators";
-
-const PAGE_BG = "#f6f7fb";
-const CARD_BG = "rgba(255,255,255,0.92)";
-const TEXT = "#17191f";
-const SUBTEXT = "#8b93a5";
-const BLUE = "#3b82f6";
-const BORDER = "#eef1f5";
 
 export default function PasswordResetScreen({ navigation }) {
   const { showError, showSuccess } = useToast();
+  const { colors } = useTheme();
+  const { t } = useLocalization();
   const [email, setEmail] = useState("");
 
   const handleReset = () => {
     if (!isEmail(email)) {
-      showError("Enter a valid email address.");
+      showError(t("authInvalidEmail"));
       return;
     }
 
-    showSuccess("Reset flow UI is ready for API integration.");
+    showSuccess(t("authResetReady"));
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: PAGE_BG }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
@@ -44,36 +41,36 @@ export default function PasswordResetScreen({ navigation }) {
         <View style={{ alignItems: "center", marginBottom: 18 }}>
           <Text
             style={{
-              color: SUBTEXT,
+              color: colors.subtext,
               fontWeight: "700",
               letterSpacing: 1,
             }}
           >
-            ACCOUNT HELP
+            {t("authAccountHelp")}
           </Text>
           <Text
             style={{
               marginTop: 10,
               fontSize: 34,
-              fontWeight: "900",
-              color: TEXT,
+              fontWeight: "700",
+              color: colors.text,
             }}
           >
-            Reset password
+            {t("authResetPassword")}
           </Text>
-          <Text style={{ marginTop: 8, color: SUBTEXT }}>
-            Recover access to your account.
+          <Text style={{ marginTop: 8, color: colors.subtext }}>
+            {t("authResetSubtitle")}
           </Text>
         </View>
 
         <View
           style={{
-            backgroundColor: CARD_BG,
+            backgroundColor: colors.cardGlass,
             borderRadius: 34,
             paddingHorizontal: 18,
             paddingVertical: 24,
             borderWidth: 1,
-            borderColor: "rgba(255,255,255,0.72)",
+            borderColor: colors.border,
             shadowColor: "#000000",
             shadowOpacity: 0.08,
             shadowRadius: 24,
@@ -84,27 +81,36 @@ export default function PasswordResetScreen({ navigation }) {
           <Text
             style={{
               textAlign: "center",
-              color: SUBTEXT,
+              color: colors.subtext,
               lineHeight: 20,
             }}
           >
-            Enter your email address and the app will be ready for a reset-link
-            flow.
+            {t("authResetInfo")}
           </Text>
 
           <TextInput
             value={email}
             onChangeText={setEmail}
-            placeholder="Email"
-            placeholderTextColor={SUBTEXT}
+            placeholder={t("authEmail")}
+            placeholderTextColor={colors.subtext}
             autoCapitalize="none"
             keyboardType="email-address"
-            style={inputStyle}
+            style={[
+              inputStyle,
+              {
+                borderColor: colors.border,
+                backgroundColor: colors.input,
+                color: colors.text,
+              },
+            ]}
           />
 
-          <Pressable onPress={handleReset} style={primaryButton}>
+          <Pressable
+            onPress={handleReset}
+            style={[primaryButton, { backgroundColor: colors.primary }]}
+          >
             <Text style={{ color: "#ffffff", fontWeight: "800" }}>
-              Send reset link
+              {t("authSendReset")}
             </Text>
           </Pressable>
 
@@ -112,8 +118,8 @@ export default function PasswordResetScreen({ navigation }) {
             onPress={() => navigation.goBack()}
             style={{ marginTop: 18, alignSelf: "center" }}
           >
-            <Text style={{ color: BLUE, fontWeight: "800" }}>
-              Back to login
+            <Text style={{ color: colors.primary, fontWeight: "800" }}>
+              {t("commonBackToLogin")}
             </Text>
           </Pressable>
         </View>
@@ -128,9 +134,6 @@ const inputStyle = {
   paddingVertical: 14,
   borderRadius: 999,
   borderWidth: 1,
-  borderColor: BORDER,
-  backgroundColor: "rgba(255,255,255,0.78)",
-  color: TEXT,
 };
 
 const primaryButton = {
@@ -138,5 +141,4 @@ const primaryButton = {
   paddingVertical: 15,
   borderRadius: 999,
   alignItems: "center",
-  backgroundColor: BLUE,
 };

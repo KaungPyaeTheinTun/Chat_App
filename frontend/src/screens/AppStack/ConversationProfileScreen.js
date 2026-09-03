@@ -8,18 +8,15 @@ import UserAvatar from "../../components/UserAvatar";
 import { useToast, getErrorMessage } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
 import { useChat } from "../../context/ChatContext";
-
-const PAGE_BG = "#f6f7fb";
-const CARD_BG = "#ffffff";
-const TEXT = "#17191f";
-const SUBTEXT = "#8b93a5";
-const BLUE = "#3b82f6";
-const DANGER = "#ef4444";
+import { useLocalization } from "../../context/LocalizationContext";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function ConversationProfileScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { showError, showSuccess } = useToast();
+  const { colors } = useTheme();
+  const { t } = useLocalization();
   const {
     activeConversation,
     conversations,
@@ -68,7 +65,7 @@ export default function ConversationProfileScreen({ route, navigation }) {
 
   const profileUser = isGroup
     ? {
-        username: conversation?.title || "Group chat",
+        username: conversation?.title || t("commonGroupChat"),
         avatarUrl: conversation?.avatarUrl,
       }
     : peerUser;
@@ -80,7 +77,7 @@ export default function ConversationProfileScreen({ route, navigation }) {
 
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      showError("Photo library permission is required.");
+      showError(t("chatPhotoPermission"));
       return;
     }
 
@@ -97,9 +94,9 @@ export default function ConversationProfileScreen({ route, navigation }) {
 
     try {
       await uploadGroupAvatar(conversation.conversationId, result.assets[0]);
-      showSuccess("Group image updated.");
+      showSuccess(t("profileGroupImageUpdated"));
     } catch (error) {
-      showError(getErrorMessage(error, "Unable to update group image."));
+      showError(getErrorMessage(error, t("profileUnableGroupImage")));
     }
   };
 
@@ -113,9 +110,9 @@ export default function ConversationProfileScreen({ route, navigation }) {
       await updateGroupProfile(conversation.conversationId, {
         title: groupTitle.trim(),
       });
-      showSuccess("Group name updated.");
+      showSuccess(t("profileGroupNameUpdated"));
     } catch (error) {
-      showError(getErrorMessage(error, "Unable to update group name."));
+      showError(getErrorMessage(error, t("profileUnableGroupName")));
     } finally {
       setIsSaving(false);
     }
@@ -142,9 +139,9 @@ export default function ConversationProfileScreen({ route, navigation }) {
       await addGroupMembers(conversation.conversationId, selectedMemberIds);
       setSelectedMemberIds([]);
       setMemberQuery("");
-      showSuccess("Members added.");
+      showSuccess(t("profileMembersAdded"));
     } catch (error) {
-      showError(getErrorMessage(error, "Unable to add members."));
+      showError(getErrorMessage(error, t("profileUnableAddMembers")));
     }
   };
 
@@ -154,17 +151,17 @@ export default function ConversationProfileScreen({ route, navigation }) {
     }
 
     setConfirmation({
-      title: "Kick member",
-      message: `Remove ${member.username} from this group?`,
-      confirmLabel: "Kick",
+      title: t("profileKickMember"),
+      message: t("profileKickConfirm", { name: member.username }),
+      confirmLabel: t("commonKick"),
       icon: "person-remove-outline",
       onConfirm: async () => {
         setConfirmation(null);
         try {
           await removeGroupMember(conversation.conversationId, member.userId);
-          showSuccess("Member removed.");
+          showSuccess(t("profileMemberRemoved"));
         } catch (error) {
-          showError(getErrorMessage(error, "Unable to remove member."));
+          showError(getErrorMessage(error, t("profileUnableRemoveMember")));
         }
       },
     });
@@ -172,14 +169,16 @@ export default function ConversationProfileScreen({ route, navigation }) {
 
   if (!conversation && !peerUser) {
     return (
-      <View style={{ flex: 1, backgroundColor: PAGE_BG, padding: 20 }}>
-        <Text style={{ color: TEXT }}>Profile not found.</Text>
+      <View
+        style={{ flex: 1, backgroundColor: colors.background, padding: 20 }}
+      >
+        <Text style={{ color: colors.text }}>{t("profileNotFound")}</Text>
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: PAGE_BG }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View
         style={{
           paddingTop: insets.top + 12,
@@ -188,18 +187,21 @@ export default function ConversationProfileScreen({ route, navigation }) {
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Pressable onPress={() => navigation.goBack()} style={backButton}>
-            <Ionicons name="chevron-back" size={24} color={TEXT} />
+          <Pressable
+            onPress={() => navigation.goBack()}
+            style={[backButton, { backgroundColor: colors.card }]}
+          >
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </Pressable>
           <Text
             style={{
               marginLeft: 12,
-              color: TEXT,
+              color: colors.text,
               fontSize: 24,
-              fontWeight: "800",
+              fontWeight: "700",
             }}
           >
-            Profile
+            {t("profileTitle")}
           </Text>
         </View>
       </View>
@@ -212,11 +214,19 @@ export default function ConversationProfileScreen({ route, navigation }) {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={profileCard}>
+        <View style={[profileCard, { backgroundColor: colors.card }]}>
           <Pressable onPress={handlePickGroupImage} disabled={!isOwner}>
             <UserAvatar user={profileUser} size={92} />
             {isOwner ? (
-              <View style={cameraBadge}>
+              <View
+                style={[
+                  cameraBadge,
+                  {
+                    backgroundColor: colors.primary,
+                    borderColor: colors.card,
+                  },
+                ]}
+              >
                 <Ionicons name="camera" size={16} color="#ffffff" />
               </View>
             ) : null}
@@ -224,48 +234,76 @@ export default function ConversationProfileScreen({ route, navigation }) {
           <Text
             style={{
               marginTop: 14,
-              color: TEXT,
+              color: colors.text,
               fontSize: 22,
-              fontWeight: "800",
+              fontWeight: "700",
             }}
           >
-            {isGroup ? conversation?.title || "Group chat" : peerUser?.username}
-          </Text>
-          <Text style={{ marginTop: 6, color: SUBTEXT }}>
             {isGroup
-              ? `${conversation?.members?.length || 0} members`
+              ? conversation?.title || t("commonGroupChat")
+              : peerUser?.username}
+          </Text>
+          <Text style={{ marginTop: 6, color: colors.subtext }}>
+            {isGroup
+              ? t("commonMembersCount", {
+                  count: conversation?.members?.length || 0,
+                })
               : peerUser?.email}
           </Text>
           {!isGroup ? (
-            <View style={statusPill}>
-              <Text style={{ color: SUBTEXT, fontWeight: "800" }}>
-                {peerUser?.status === "online" ? "Active now" : "Offline"}
+            <View
+              style={[statusPill, { backgroundColor: colors.surfaceMuted }]}
+            >
+              <Text style={{ color: colors.subtext, fontWeight: "800" }}>
+                {peerUser?.status === "online"
+                  ? t("commonActiveNow")
+                  : t("commonOffline")}
               </Text>
             </View>
           ) : null}
         </View>
 
         {isGroup && isOwner ? (
-          <View style={card}>
-            <Text style={sectionTitle}>Edit Group</Text>
+          <View
+            style={[
+              card,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <Text style={[sectionTitle, { color: colors.text }]}>
+              {t("profileEditGroup")}
+            </Text>
             <TextInput
               value={groupTitle}
               onChangeText={setGroupTitle}
-              placeholder="Group name"
-              placeholderTextColor={SUBTEXT}
-              style={input}
+              placeholder={t("createGroupName")}
+              placeholderTextColor={colors.subtext}
+              style={[
+                input,
+                { backgroundColor: colors.input, color: colors.text },
+              ]}
             />
-            <Pressable onPress={handleSaveGroupName} style={primaryButton}>
+            <Pressable
+              onPress={handleSaveGroupName}
+              style={[primaryButton, { backgroundColor: colors.primary }]}
+            >
               <Text style={{ color: "#ffffff", fontWeight: "800" }}>
-                {isSaving ? "Saving..." : "Save Group Name"}
+                {isSaving ? t("commonSaving") : t("profileSaveGroupName")}
               </Text>
             </Pressable>
           </View>
         ) : null}
 
         {isGroup ? (
-          <View style={card}>
-            <Text style={sectionTitle}>Members</Text>
+          <View
+            style={[
+              card,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <Text style={[sectionTitle, { color: colors.text }]}>
+              {t("commonMembers")}
+            </Text>
             {(conversation?.members || []).map((member) => {
               const memberIsOwner =
                 member.role === "owner" ||
@@ -277,37 +315,48 @@ export default function ConversationProfileScreen({ route, navigation }) {
                     <View
                       style={{ flexDirection: "row", alignItems: "center" }}
                     >
-                      <Text style={{ color: TEXT, fontWeight: "800" }}>
+                      <Text style={{ color: colors.text, fontWeight: "800" }}>
                         {member.username}
                       </Text>
                       <View
                         style={[
                           rolePill,
-                          memberIsOwner ? { backgroundColor: "#e9f9ee" } : null,
+                          {
+                            backgroundColor: memberIsOwner
+                              ? colors.accent
+                              : colors.surfaceMuted,
+                          },
                         ]}
                       >
                         <Text
                           style={{
-                            color: memberIsOwner ? "#20a246" : SUBTEXT,
+                            color: memberIsOwner
+                              ? colors.success
+                              : colors.subtext,
                             fontSize: 10,
                             fontWeight: "800",
                           }}
                         >
-                          {memberIsOwner ? "Owner" : "Member"}
+                          {memberIsOwner ? t("commonOwner") : t("commonMember")}
                         </Text>
                       </View>
                     </View>
-                    <Text style={{ marginTop: 3, color: SUBTEXT }}>
-                      {member.status || "offline"}
+                    <Text style={{ marginTop: 3, color: colors.subtext }}>
+                      {member.status === "online"
+                        ? t("commonActiveNow")
+                        : t("commonOffline")}
                     </Text>
                   </View>
                   {isOwner && !memberIsOwner ? (
                     <Pressable
                       onPress={() => handleRemoveMember(member)}
-                      style={kickButton}
+                      style={[
+                        kickButton,
+                        { backgroundColor: colors.dangerSoft },
+                      ]}
                     >
-                      <Text style={{ color: DANGER, fontWeight: "800" }}>
-                        Kick
+                      <Text style={{ color: colors.danger, fontWeight: "800" }}>
+                        {t("commonKick")}
                       </Text>
                     </Pressable>
                   ) : null}
@@ -318,14 +367,24 @@ export default function ConversationProfileScreen({ route, navigation }) {
         ) : null}
 
         {isGroup && isOwner ? (
-          <View style={card}>
-            <Text style={sectionTitle}>Add Member</Text>
+          <View
+            style={[
+              card,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <Text style={[sectionTitle, { color: colors.text }]}>
+              {t("profileAddMember")}
+            </Text>
             <TextInput
               value={memberQuery}
               onChangeText={setMemberQuery}
-              placeholder="Search username"
-              placeholderTextColor={SUBTEXT}
-              style={input}
+              placeholder={t("commonSearchUsername")}
+              placeholderTextColor={colors.subtext}
+              style={[
+                input,
+                { backgroundColor: colors.input, color: colors.text },
+              ]}
             />
             {availableUsers.map((item) => {
               const isSelected = selectedMemberIds.includes(item.userId);
@@ -340,7 +399,7 @@ export default function ConversationProfileScreen({ route, navigation }) {
                     style={{
                       marginLeft: 12,
                       flex: 1,
-                      color: TEXT,
+                      color: colors.text,
                       fontWeight: "800",
                     }}
                   >
@@ -349,7 +408,7 @@ export default function ConversationProfileScreen({ route, navigation }) {
                   <Ionicons
                     name={isSelected ? "checkmark-circle" : "ellipse-outline"}
                     size={24}
-                    color={isSelected ? BLUE : SUBTEXT}
+                    color={isSelected ? colors.primary : colors.subtext}
                   />
                 </Pressable>
               );
@@ -359,12 +418,14 @@ export default function ConversationProfileScreen({ route, navigation }) {
               style={[
                 primaryButton,
                 {
-                  backgroundColor: selectedMemberIds.length ? BLUE : "#c8d7f8",
+                  backgroundColor: selectedMemberIds.length
+                    ? colors.primary
+                    : colors.primarySoft,
                 },
               ]}
             >
               <Text style={{ color: "#ffffff", fontWeight: "800" }}>
-                Add Selected Members
+                {t("profileAddSelectedMembers")}
               </Text>
             </Pressable>
           </View>
@@ -391,27 +452,22 @@ const backButton = {
   borderRadius: 21,
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: CARD_BG,
 };
 
 const profileCard = {
   padding: 22,
   borderRadius: 28,
   alignItems: "center",
-  backgroundColor: CARD_BG,
 };
 
 const card = {
   marginTop: 16,
   padding: 16,
   borderRadius: 24,
-  backgroundColor: CARD_BG,
   borderWidth: 1,
-  borderColor: "#eef1f5",
 };
 
 const sectionTitle = {
-  color: TEXT,
   fontSize: 16,
   fontWeight: "800",
 };
@@ -421,8 +477,6 @@ const input = {
   paddingHorizontal: 14,
   paddingVertical: 13,
   borderRadius: 16,
-  backgroundColor: PAGE_BG,
-  color: TEXT,
 };
 
 const primaryButton = {
@@ -431,7 +485,6 @@ const primaryButton = {
   borderRadius: 23,
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: BLUE,
 };
 
 const memberRow = {
@@ -445,14 +498,12 @@ const rolePill = {
   paddingHorizontal: 8,
   paddingVertical: 3,
   borderRadius: 999,
-  backgroundColor: "#f2f4f8",
 };
 
 const kickButton = {
   paddingHorizontal: 12,
   paddingVertical: 7,
   borderRadius: 16,
-  backgroundColor: "#fff1f2",
 };
 
 const cameraBadge = {
@@ -464,9 +515,7 @@ const cameraBadge = {
   borderRadius: 15,
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: BLUE,
   borderWidth: 3,
-  borderColor: CARD_BG,
 };
 
 const statusPill = {
@@ -474,5 +523,4 @@ const statusPill = {
   paddingHorizontal: 12,
   paddingVertical: 7,
   borderRadius: 16,
-  backgroundColor: "#f2f4f8",
 };

@@ -3,21 +3,26 @@ import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors } from "../styles/colors";
+import { useLocalization } from "../context/LocalizationContext";
+import { useTheme } from "../context/ThemeContext";
 
 export default function ConfirmationModal({
   visible,
   title,
   message,
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
+  confirmLabel,
+  cancelLabel,
   danger = false,
   icon = "alert-circle-outline",
   onConfirm,
   onCancel,
 }) {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useTheme();
+  const { t } = useLocalization();
   const accentColor = danger ? colors.danger : colors.primary;
+  const resolvedConfirmLabel = confirmLabel || t("commonConfirm");
+  const resolvedCancelLabel = cancelLabel || t("commonCancel");
 
   return (
     <Modal
@@ -27,7 +32,7 @@ export default function ConfirmationModal({
       onRequestClose={onCancel}
     >
       <BlurView
-        tint="light"
+        tint={isDark ? "dark" : "light"}
         intensity={55}
         style={StyleSheet.absoluteFillObject}
       />
@@ -36,7 +41,7 @@ export default function ConfirmationModal({
         style={{
           flex: 1,
           justifyContent: "flex-end",
-          backgroundColor: "rgba(0,0,0,0.12)",
+          backgroundColor: colors.overlay,
         }}
       >
         <View
@@ -46,7 +51,7 @@ export default function ConfirmationModal({
             marginBottom: Math.max(insets.bottom + 10, 24),
             borderRadius: 26,
             overflow: "hidden",
-            backgroundColor: "rgba(255,255,255,0.94)",
+            backgroundColor: colors.cardGlass,
             shadowColor: "#000000",
             shadowOpacity: 0.2,
             shadowRadius: 30,
@@ -62,7 +67,7 @@ export default function ConfirmationModal({
                 borderRadius: 25,
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: danger ? "#fff1f2" : "#eff6ff",
+                backgroundColor: danger ? colors.dangerSoft : colors.accent,
               }}
             >
               <Ionicons name={icon} size={25} color={accentColor} />
@@ -90,16 +95,18 @@ export default function ConfirmationModal({
             </Text>
           </View>
 
-          <View style={divider} />
+          <View style={[divider, { backgroundColor: colors.divider }]} />
           <Pressable onPress={onConfirm} style={actionRow}>
             <Text style={[actionText, { color: accentColor }]}>
-              {confirmLabel}
+              {resolvedConfirmLabel}
             </Text>
             <Ionicons name="checkmark-outline" size={21} color={accentColor} />
           </Pressable>
-          <View style={divider} />
+          <View style={[divider, { backgroundColor: colors.divider }]} />
           <Pressable onPress={onCancel} style={actionRow}>
-            <Text style={actionText}>{cancelLabel}</Text>
+            <Text style={[actionText, { color: colors.text }]}>
+              {resolvedCancelLabel}
+            </Text>
             <Ionicons name="close-outline" size={22} color={colors.text} />
           </Pressable>
         </View>
@@ -117,12 +124,10 @@ const actionRow = {
 };
 
 const actionText = {
-  color: colors.text,
   fontSize: 15,
   fontWeight: "800",
 };
 
 const divider = {
   height: 1,
-  backgroundColor: "rgba(60,60,67,0.14)",
 };

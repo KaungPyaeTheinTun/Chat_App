@@ -1,9 +1,10 @@
 import React from "react";
 import { Image, Text, View } from "react-native";
-import { colors } from "../styles/colors";
+import { useTheme } from "../context/ThemeContext";
 import { resolveMediaUrl } from "../utils/media";
 
 export default function UserAvatar({ user, size = 46 }) {
+  const { colors } = useTheme();
   const avatarUri = resolveMediaUrl(user?.avatarUrl);
 
   if (avatarUri) {

@@ -10,26 +10,35 @@ import React, {
 import { Animated, PanResponder, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors } from "../styles/colors";
+import UserAvatar from "./UserAvatar";
+import { useLocalization } from "../context/LocalizationContext";
+import { useTheme } from "../context/ThemeContext";
 
 const ToastContext = createContext(null);
 
-const toastStyles = {
+const getToastStyles = (colors) => ({
   success: {
-    backgroundColor: "rgba(255,255,255,0.86)",
-    borderColor: "rgba(255,255,255,0.72)",
+    backgroundColor: colors.toast,
+    borderColor: colors.toastBorder,
     icon: "checkmark-circle",
     iconColor: colors.success,
-    textColor: "#153b32",
+    textColor: colors.text,
   },
   error: {
-    backgroundColor: "rgba(255,255,255,0.86)",
-    borderColor: "rgba(255,255,255,0.72)",
+    backgroundColor: colors.toast,
+    borderColor: colors.toastBorder,
     icon: "alert-circle",
     iconColor: colors.danger,
-    textColor: "#5a1717",
+    textColor: colors.text,
   },
-};
+  message: {
+    backgroundColor: colors.toast,
+    borderColor: colors.toastBorder,
+    icon: "chatbubble-ellipses",
+    iconColor: colors.primary,
+    textColor: colors.text,
+  },
+});
 
 export const getErrorMessage = (
   error,
@@ -40,6 +49,8 @@ export const getErrorMessage = (
 
 export function ToastProvider({ children }) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const { t } = useLocalization();
   const [toast, setToast] = useState(null);
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-90)).current;
@@ -119,6 +130,18 @@ export function ToastProvider({ children }) {
     [],
   );
 
+  const showMessageNotification = useCallback((payload, duration = 3600) => {
+    setToast({
+      id: Date.now(),
+      type: "message",
+      duration,
+      message: payload.message,
+      title: payload.title,
+      time: payload.time,
+      avatarUser: payload.avatarUser,
+    });
+  }, []);
+
   useEffect(() => {
     if (!toast?.message) {
       return undefined;
@@ -158,10 +181,12 @@ export function ToastProvider({ children }) {
       showSuccess: (message, duration) =>
         showToast(message, "success", duration),
       showError: (message, duration) => showToast(message, "error", duration),
+      showMessageNotification,
     }),
-    [showToast],
+    [showMessageNotification, showToast],
   );
 
+  const toastStyles = getToastStyles(colors);
   const tone = toast ? toastStyles[toast.type] || toastStyles.success : null;
 
   return (
@@ -199,19 +224,25 @@ export function ToastProvider({ children }) {
               elevation: 9,
             }}
           >
-            <View
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 10,
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "rgba(255,255,255,0.65)",
-                marginRight: 10,
-              }}
-            >
-              <Ionicons name={tone.icon} size={22} color={tone.iconColor} />
-            </View>
+            {toast.type === "message" ? (
+              <View style={{ marginRight: 10 }}>
+                <UserAvatar user={toast.avatarUser} size={42} />
+              </View>
+            ) : (
+              <View
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 10,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: colors.iconSurface,
+                  marginRight: 10,
+                }}
+              >
+                <Ionicons name={tone.icon} size={22} color={tone.iconColor} />
+              </View>
+            )}
             <View style={{ flex: 1 }}>
               <View
                 style={{
@@ -227,16 +258,19 @@ export function ToastProvider({ children }) {
                     fontWeight: "900",
                   }}
                 >
-                  ChatApp
+                  {toast.type === "message" ? toast.title : t("appName")}
                 </Text>
                 <Text
                   style={{
-                    color: "rgba(21,59,50,0.58)",
+                    color:
+                      toast.type === "message"
+                        ? colors.subtext
+                        : colors.subtext,
                     fontSize: 11,
                     fontWeight: "700",
                   }}
                 >
-                  now
+                  {toast.type === "message" ? toast.time : t("now")}
                 </Text>
               </View>
               <Text

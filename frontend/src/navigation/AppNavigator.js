@@ -1,75 +1,160 @@
-import React from "react";
-import { StyleSheet } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Animated, Pressable, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { createStackNavigator } from "@react-navigation/stack";
+import {
+  CardStyleInterpolators,
+  TransitionSpecs,
+  createStackNavigator,
+} from "@react-navigation/stack";
 import ChatListScreen from "../screens/AppStack/ChatListScreen";
 import ChatScreen from "../screens/AppStack/ChatScreen";
 import ConversationProfileScreen from "../screens/AppStack/ConversationProfileScreen";
 import CreateGroupScreen from "../screens/AppStack/CreateGroupScreen";
+import LanguageSettingsScreen from "../screens/AppStack/LanguageSettingsScreen";
+import NotificationSettingsScreen from "../screens/AppStack/NotificationSettingsScreen";
 import PeopleListScreen from "../screens/AppStack/PeopleListScreen";
 import ProfileScreen from "../screens/AppStack/ProfileScreen";
 import SearchScreen from "../screens/AppStack/SearchScreen";
 import SettingsScreen from "../screens/AppStack/SettingsScreen";
 import UserSearchScreen from "../screens/AppStack/UserSearchScreen";
-import { colors } from "../styles/colors";
+import { useLocalization } from "../context/LocalizationContext";
+import { useTheme } from "../context/ThemeContext";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
+const tabIcons = {
+  Chats: "chatbubble-ellipses-outline",
+  People: "people-outline",
+  Settings: "settings-outline",
+};
+
+const slideTransitionOptions = {
+  gestureEnabled: true,
+  gestureDirection: "horizontal",
+  transitionSpec: {
+    open: TransitionSpecs.TransitionIOSSpec,
+    close: TransitionSpecs.TransitionIOSSpec,
+  },
+  cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+};
+
+function FloatingTabBar({ state, descriptors, navigation }) {
+  const { colors } = useTheme();
+  const { t } = useLocalization();
+  const [tabBarWidth, setTabBarWidth] = useState(0);
+  const activeIndex = useRef(new Animated.Value(state.index)).current;
+  const tabCount = state.routes.length || 1;
+  const tabWidth = tabBarWidth / tabCount;
+  const indicatorWidth = 104;
+  const indicatorTranslateX = activeIndex.interpolate({
+    inputRange: state.routes.map((_, index) => index),
+    outputRange: state.routes.map(
+      (_, index) => index * tabWidth + (tabWidth - indicatorWidth) / 2,
+    ),
+  });
+  const tabLabels = {
+    Chats: t("chatListChats"),
+    People: t("peopleTitle"),
+    Settings: t("settingsTitle"),
+  };
+
+  useEffect(() => {
+    Animated.spring(activeIndex, {
+      toValue: state.index,
+      useNativeDriver: true,
+      damping: 18,
+      stiffness: 180,
+      mass: 0.8,
+    }).start();
+  }, [activeIndex, state.index]);
+
+  return (
+    <View pointerEvents="box-none" style={floatingTabOuter}>
+      <View
+        onLayout={(event) => setTabBarWidth(event.nativeEvent.layout.width)}
+        style={[
+          floatingTabShell,
+          {
+            backgroundColor: colors.cardGlass,
+            borderTopColor: colors.border,
+          },
+        ]}
+      >
+        {tabBarWidth ? (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              floatingTabIndicator,
+              {
+                width: indicatorWidth,
+                backgroundColor: colors.primarySoft,
+                borderColor: colors.border,
+                transform: [{ translateX: indicatorTranslateX }],
+              },
+            ]}
+          />
+        ) : null}
+        {state.routes.map((route, index) => {
+          const isFocused = state.index === index;
+          const descriptor = descriptors[route.key];
+          const label =
+            descriptor.options.tabBarLabel ??
+            descriptor.options.title ??
+            tabLabels[route.name] ??
+            route.name;
+
+          const onPress = () => {
+            const event = navigation.emit({
+              type: "tabPress",
+              target: route.key,
+              canPreventDefault: true,
+            });
+
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
+
+          return (
+            <Pressable
+              key={route.key}
+              onPress={onPress}
+              style={floatingTabItem}
+            >
+              <View style={floatingTabPill}>
+                <Ionicons
+                  name={tabIcons[route.name] || "ellipse-outline"}
+                  size={23}
+                  color={isFocused ? colors.primary : colors.subtext}
+                />
+                <Text
+                  style={{
+                    marginTop: 3,
+                    color: isFocused ? colors.primary : colors.subtext,
+                    fontSize: 12,
+                    fontWeight: "700",
+                  }}
+                >
+                  {label}
+                </Text>
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 function MainTabs() {
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
+      tabBar={(props) => <FloatingTabBar {...props} />}
+      screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.subtext,
-        tabBarStyle: {
-          position: "absolute",
-          left: 18,
-          right: 18,
-          bottom: 18,
-          height: 70,
-          paddingBottom: 10,
-          paddingTop: 10,
-          borderTopWidth: 0,
-          borderRadius: 28,
-          overflow: "hidden",
-          backgroundColor: "transparent",
-          borderWidth: 1,
-          borderColor: "rgba(255,255,255,0.55)",
-          shadowColor: "#000000",
-          shadowOpacity: 0.12,
-          shadowRadius: 20,
-          shadowOffset: { width: 0, height: 10 },
-          elevation: 10,
-        },
-        tabBarBackground: () => (
-          <BlurView
-            tint="light"
-            intensity={65}
-            style={[
-              StyleSheet.absoluteFillObject,
-              { backgroundColor: "rgba(255,255,255,0.34)" },
-            ]}
-          />
-        ),
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: "700",
-        },
-        tabBarIcon: ({ color, size }) => {
-          const icons = {
-            Chats: "chatbubble-ellipses-outline",
-            People: "people-outline",
-            Settings: "settings-outline",
-          };
-          const iconName = icons[route.name] || "ellipse-outline";
-
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-      })}
+      }}
     >
       <Tab.Screen name="Chats" component={ChatListScreen} />
       <Tab.Screen name="People" component={PeopleListScreen} />
@@ -79,6 +164,8 @@ function MainTabs() {
 }
 
 export default function AppNavigator() {
+  const { colors } = useTheme();
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -86,6 +173,7 @@ export default function AppNavigator() {
         headerTintColor: colors.text,
         headerTitleStyle: { fontWeight: "800" },
         cardStyle: { backgroundColor: colors.background },
+        ...slideTransitionOptions,
       }}
     >
       <Stack.Screen
@@ -123,6 +211,62 @@ export default function AppNavigator() {
         component={ProfileScreen}
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="NotificationSettingsScreen"
+        component={NotificationSettingsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="LanguageSettingsScreen"
+        component={LanguageSettingsScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }
+
+const floatingTabOuter = {
+  position: "absolute",
+  left: 0,
+  right: 0,
+  bottom: 0,
+  height: 82,
+};
+
+const floatingTabShell = {
+  flex: 1,
+  position: "relative",
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-around",
+  paddingTop: 8,
+  paddingBottom: 10,
+  borderTopWidth: 1,
+};
+
+const floatingTabItem = {
+  flex: 1,
+  height: "100%",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 2,
+};
+
+const floatingTabPill = {
+  minWidth: 92,
+  height: 56,
+  paddingHorizontal: 16,
+  borderRadius: 28,
+  alignItems: "center",
+  justifyContent: "center",
+};
+
+const floatingTabIndicator = {
+  position: "absolute",
+  left: 0,
+  top: 13,
+  height: 56,
+  borderRadius: 999,
+  borderWidth: 1,
+  zIndex: 1,
+};
