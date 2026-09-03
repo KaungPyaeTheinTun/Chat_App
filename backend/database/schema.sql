@@ -1,3 +1,6 @@
+-- Canonical ChatApp database schema.
+-- Docker uses this file to initialize a fresh MySQL database.
+
 CREATE TABLE IF NOT EXISTS users (
   user_id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(255) UNIQUE NOT NULL,

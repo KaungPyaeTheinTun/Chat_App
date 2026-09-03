@@ -11,6 +11,7 @@ import ChatListScreen from "../screens/AppStack/ChatListScreen";
 import ChatScreen from "../screens/AppStack/ChatScreen";
 import ConversationProfileScreen from "../screens/AppStack/ConversationProfileScreen";
 import CreateGroupScreen from "../screens/AppStack/CreateGroupScreen";
+import GroupListScreen from "../screens/AppStack/GroupListScreen";
 import LanguageSettingsScreen from "../screens/AppStack/LanguageSettingsScreen";
 import NotificationSettingsScreen from "../screens/AppStack/NotificationSettingsScreen";
 import PeopleListScreen from "../screens/AppStack/PeopleListScreen";
@@ -26,6 +27,7 @@ const Stack = createStackNavigator();
 
 const tabIcons = {
   Chats: "chatbubble-ellipses-outline",
+  Groups: "chatbubbles-outline",
   People: "people-outline",
   Settings: "settings-outline",
 };
@@ -47,7 +49,7 @@ function FloatingTabBar({ state, descriptors, navigation }) {
   const activeIndex = useRef(new Animated.Value(state.index)).current;
   const tabCount = state.routes.length || 1;
   const tabWidth = tabBarWidth / tabCount;
-  const indicatorWidth = 104;
+  const indicatorWidth = Math.min(104, Math.max(78, tabWidth - 8));
   const indicatorTranslateX = activeIndex.interpolate({
     inputRange: state.routes.map((_, index) => index),
     outputRange: state.routes.map(
@@ -56,6 +58,7 @@ function FloatingTabBar({ state, descriptors, navigation }) {
   });
   const tabLabels = {
     Chats: t("chatListChats"),
+    Groups: t("groupsTitle"),
     People: t("peopleTitle"),
     Settings: t("settingsTitle"),
   };
@@ -157,6 +160,7 @@ function MainTabs() {
       }}
     >
       <Tab.Screen name="Chats" component={ChatListScreen} />
+      <Tab.Screen name="Groups" component={GroupListScreen} />
       <Tab.Screen name="People" component={PeopleListScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
@@ -253,9 +257,9 @@ const floatingTabItem = {
 };
 
 const floatingTabPill = {
-  minWidth: 92,
+  width: "100%",
   height: 56,
-  paddingHorizontal: 16,
+  paddingHorizontal: 4,
   borderRadius: 28,
   alignItems: "center",
   justifyContent: "center",

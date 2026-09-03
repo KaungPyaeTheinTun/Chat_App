@@ -25,7 +25,7 @@ const MENU_REACTIONS = ["🔥", "🙌", "😭", "🙈", "🙏", "😬", "✨", "
 
 export default function ChatListScreen({ navigation }) {
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
   const { showSuccess } = useToast();
   const { colors, isDark } = useTheme();
   const { t } = useLocalization();
@@ -40,15 +40,22 @@ export default function ChatListScreen({ navigation }) {
   } = useChat();
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [showChatsMenu, setShowChatsMenu] = useState(false);
+  const [chatsMenuAnchor, setChatsMenuAnchor] = useState(null);
   const [confirmation, setConfirmation] = useState(null);
+  const dotsButtonRef = useRef(null);
   const scrollY = useRef(new Animated.Value(0)).current;
+
+  const directConversations = useMemo(
+    () => conversations.filter((item) => item.conversationType !== "group"),
+    [conversations],
+  );
 
   const usersWithoutConversation = useMemo(() => {
     const usedIds = new Set(
-      conversations.map((item) => item.otherUser?.userId),
+      directConversations.map((item) => item.otherUser?.userId),
     );
     return users.filter((item) => !usedIds.has(item.userId));
-  }, [users, conversations]);
+  }, [users, directConversations]);
 
   const storyUsers = useMemo(() => users.slice(0, 8), [users]);
   const collapsedStoryUsers = useMemo(() => users.slice(0, 2), [users]);
@@ -127,6 +134,18 @@ export default function ChatListScreen({ navigation }) {
   const handleReactionPress = (reaction) => {
     setSelectedConversation(null);
     showSuccess(t("chatReactionSoon", { reaction }));
+  };
+
+  const openChatsMenu = () => {
+    dotsButtonRef.current?.measureInWindow(
+      (x, y, buttonWidth, buttonHeight) => {
+        setChatsMenuAnchor({
+          top: y + buttonHeight + 4,
+          right: Math.max(12, width - x - buttonWidth),
+        });
+        setShowChatsMenu(true);
+      },
+    );
   };
 
   return (
@@ -208,25 +227,108 @@ export default function ChatListScreen({ navigation }) {
             </Text>
           </Animated.View>
         </View>
-        <Pressable
-          onPress={() => navigation.navigate("SearchScreen")}
-          style={{
-            width: 42,
-            height: 42,
-            borderRadius: 21,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: colors.cardGlass,
-            shadowColor: "#000000",
-            shadowOpacity: 0.05,
-            shadowRadius: 10,
-            shadowOffset: { width: 0, height: 4 },
-            elevation: 2,
-          }}
-        >
-          <Ionicons name="search-outline" size={20} color={colors.text} />
-        </Pressable>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Pressable
+            onPress={() => navigation.navigate("SearchScreen")}
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 21,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: colors.cardGlass,
+              shadowColor: "#000000",
+              shadowOpacity: 0.05,
+              shadowRadius: 10,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 2,
+            }}
+          >
+            <Ionicons name="search-outline" size={20} color={colors.text} />
+          </Pressable>
+          <Pressable
+            ref={dotsButtonRef}
+            onPress={openChatsMenu}
+            style={{
+              width: 32,
+              height: 42,
+              marginLeft: 6,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Ionicons name="ellipsis-vertical" size={20} color={colors.text} />
+          </Pressable>
+        </View>
       </View>
+
+      <Modal
+        visible={showChatsMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowChatsMenu(false)}
+      >
+        <View style={{ flex: 1 }}>
+          <Pressable
+            onPress={() => setShowChatsMenu(false)}
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0,
+              backgroundColor: "transparent",
+            }}
+          />
+          <View
+            onStartShouldSetResponder={() => true}
+            style={{
+              position: "absolute",
+              top: chatsMenuAnchor?.top || insets.top + 50,
+              right: chatsMenuAnchor?.right || 20,
+              width: 210,
+              borderRadius: 18,
+              overflow: "hidden",
+              backgroundColor: colors.card,
+              shadowColor: "#000000",
+              shadowOpacity: 0.14,
+              shadowRadius: 18,
+              shadowOffset: { width: 0, height: 10 },
+              elevation: 8,
+            }}
+          >
+            <Pressable
+              onPress={() => {
+                setShowChatsMenu(false);
+                navigation.navigate("CreateGroupScreen");
+              }}
+              style={headerMenuItem}
+            >
+              <Text style={[headerMenuText, { color: colors.text }]}>
+                {t("chatListCreateGroup")}
+              </Text>
+              <Ionicons name="people-outline" size={19} color={colors.text} />
+            </Pressable>
+            <View style={[popupDivider, { backgroundColor: colors.divider }]} />
+            <Pressable
+              onPress={() => {
+                setShowChatsMenu(false);
+                navigation.navigate("UserSearchScreen");
+              }}
+              style={headerMenuItem}
+            >
+              <Text style={[headerMenuText, { color: colors.text }]}>
+                {t("commonSearchUsername")}
+              </Text>
+              <Ionicons
+                name="person-add-outline"
+                size={19}
+                color={colors.text}
+              />
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
 
       <Animated.ScrollView
         style={{ flex: 1, backgroundColor: colors.background }}
@@ -319,79 +421,6 @@ export default function ChatListScreen({ navigation }) {
           <Text style={{ fontSize: 28, fontWeight: "700", color: colors.text }}>
             {t("chatListChats")}
           </Text>
-          <View>
-            <Pressable
-              onPress={() => setShowChatsMenu((current) => !current)}
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 19,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Ionicons
-                name="ellipsis-horizontal"
-                size={22}
-                color={colors.subtext}
-              />
-            </Pressable>
-            {showChatsMenu ? (
-              <View
-                style={{
-                  position: "absolute",
-                  top: 38,
-                  right: 0,
-                  zIndex: 20,
-                  width: 210,
-                  borderRadius: 18,
-                  overflow: "hidden",
-                  backgroundColor: colors.card,
-                  shadowColor: "#000000",
-                  shadowOpacity: 0.14,
-                  shadowRadius: 18,
-                  shadowOffset: { width: 0, height: 10 },
-                  elevation: 8,
-                }}
-              >
-                <Pressable
-                  onPress={() => {
-                    setShowChatsMenu(false);
-                    navigation.navigate("CreateGroupScreen");
-                  }}
-                  style={headerMenuItem}
-                >
-                  <Text style={[headerMenuText, { color: colors.text }]}>
-                    {t("chatListCreateGroup")}
-                  </Text>
-                  <Ionicons
-                    name="people-outline"
-                    size={19}
-                    color={colors.text}
-                  />
-                </Pressable>
-                <View
-                  style={[popupDivider, { backgroundColor: colors.divider }]}
-                />
-                <Pressable
-                  onPress={() => {
-                    setShowChatsMenu(false);
-                    navigation.navigate("UserSearchScreen");
-                  }}
-                  style={headerMenuItem}
-                >
-                  <Text style={[headerMenuText, { color: colors.text }]}>
-                    {t("commonSearchUsername")}
-                  </Text>
-                  <Ionicons
-                    name="person-add-outline"
-                    size={19}
-                    color={colors.text}
-                  />
-                </Pressable>
-              </View>
-            ) : null}
-          </View>
         </View>
 
         <View
@@ -399,8 +428,8 @@ export default function ChatListScreen({ navigation }) {
             marginTop: 10,
           }}
         >
-          {conversations.length ? (
-            conversations.map((item) => (
+          {directConversations.length ? (
+            directConversations.map((item) => (
               <View key={item.conversationId}>
                 <ConversationItem
                   conversation={item}
