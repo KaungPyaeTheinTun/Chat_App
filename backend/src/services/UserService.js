@@ -7,7 +7,13 @@ const ValidationException = require("../exceptions/ValidationException");
 const uploadsRoot = path.join(__dirname, "..", "..", "uploads");
 
 class UserService extends BaseService {
-  constructor({ userRepository, deviceTokenRepository, cacheService, logger }) {
+  constructor({
+    userRepository,
+    deviceTokenRepository,
+    conversationMemberRepository = null,
+    cacheService,
+    logger,
+  }) {
     super({
       repository: userRepository,
       entityClass: User,
@@ -17,6 +23,7 @@ class UserService extends BaseService {
     });
     this.userRepository = userRepository;
     this.deviceTokenRepository = deviceTokenRepository;
+    this.conversationMemberRepository = conversationMemberRepository;
   }
 
   async getUserById(userId) {
@@ -70,7 +77,34 @@ class UserService extends BaseService {
     const updated = await this.userRepository.updateStatus(userId, status);
     const user = this.serialize(updated);
     await this.cacheService.set(this.cacheService.userProfileKey(userId), user);
+    await this.invalidatePresenceCaches(userId);
     return user;
+  }
+
+  async invalidatePresenceCaches(userId) {
+    if (!this.conversationMemberRepository) {
+      return;
+    }
+
+    const conversationIds =
+      await this.conversationMemberRepository.listActiveConversationIdsForUser(
+        userId,
+      );
+    const visibleMemberIds = new Set();
+
+    for (const conversationId of conversationIds) {
+      const memberIds =
+        await this.conversationMemberRepository.listActiveMemberIds(
+          conversationId,
+        );
+      memberIds.forEach((memberId) => visibleMemberIds.add(memberId));
+    }
+
+    await Promise.all(
+      [...visibleMemberIds].map((memberId) =>
+        this.cacheService.del(this.cacheService.userConversationsKey(memberId)),
+      ),
+    );
   }
 
   async registerDeviceToken(userId, { token, platform, deviceId = null }) {

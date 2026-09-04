@@ -69,6 +69,21 @@ class ConversationMemberRepository extends BaseRepository {
     return rows.map((row) => row.user_id);
   }
 
+  async listActiveConversationIdsForUser(userId, connection = null) {
+    const rows = await this.db.query(
+      `
+        SELECT conversation_id
+        FROM conversation_members
+        WHERE user_id = ?
+          AND left_at IS NULL
+          AND is_deleted = FALSE
+      `,
+      [userId],
+      connection,
+    );
+    return rows.map((row) => row.conversation_id);
+  }
+
   async updatePreferences(conversationId, userId, preferences) {
     const allowed = ["is_archived", "is_muted", "is_pinned", "is_deleted"];
     const entries = Object.entries(preferences).filter(([key]) =>

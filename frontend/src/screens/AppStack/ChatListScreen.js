@@ -480,15 +480,6 @@ export default function ChatListScreen({ navigation }) {
                       : t("commonOffline")}
                   </Text>
                 </View>
-                <View
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: 5,
-                    backgroundColor:
-                      item.status === "online" ? "#41c95c" : "#d7dbe3",
-                  }}
-                />
               </Pressable>
             ))}
           </View>

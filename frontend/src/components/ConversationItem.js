@@ -46,20 +46,6 @@ export default function ConversationItem({
           }
           size={50}
         />
-        <View
-          style={{
-            position: "absolute",
-            right: 1,
-            bottom: 1,
-            width: 12,
-            height: 12,
-            borderRadius: 6,
-            backgroundColor:
-              otherUser?.status === "online" ? "#41c95c" : "#d7dbe3",
-            borderWidth: 2,
-            borderColor: colors.background,
-          }}
-        />
       </View>
 
       <View style={{ flex: 1 }}>

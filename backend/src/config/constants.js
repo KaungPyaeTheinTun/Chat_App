@@ -28,6 +28,14 @@ module.exports = {
     MEDIUM: 300,
     LONG: 3600,
   },
+  MESSAGE_CACHE: {
+    RECENT_LIMIT: 30,
+    RECENT_TTL_SECONDS: Number(process.env.RECENT_MESSAGES_CACHE_TTL || 60),
+  },
+  MESSAGE_ARCHIVE: {
+    HOT_RETENTION_DAYS: Number(process.env.MESSAGE_HOT_RETENTION_DAYS || 90),
+    BATCH_SIZE: Number(process.env.MESSAGE_ARCHIVE_BATCH_SIZE || 500),
+  },
   RATE_LIMIT: {
     WINDOW_MS: 15 * 60 * 1000,
     MAX_REQUESTS: 100,

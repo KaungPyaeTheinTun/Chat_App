@@ -2,12 +2,30 @@ const fs = require("fs/promises");
 const path = require("path");
 const BaseService = require("./base/BaseService");
 const Message = require("../models/entities/Message");
+const { MESSAGE_CACHE } = require("../config/constants");
 const ValidationException = require("../exceptions/ValidationException");
 
 const uploadsRoot = path.join(__dirname, "..", "..", "uploads");
 
 const buildClientMessageId = (senderId) =>
   `${senderId}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+const parseJsonArray = (value) => {
+  if (!value) {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
 
 class MessageService extends BaseService {
   constructor({
@@ -38,17 +56,22 @@ class MessageService extends BaseService {
   }
 
   async getConversationForUserOrFail(userId, conversationId) {
+    await this.getConversationMembershipForUserOrFail(userId, conversationId);
+
+    return this.conversationRepository.findById(conversationId);
+  }
+
+  async getConversationMembershipForUserOrFail(userId, conversationId) {
     const membership =
       await this.conversationMemberRepository.findByConversationAndUser(
         conversationId,
         userId,
       );
-
     if (!membership || membership.left_at || membership.is_deleted) {
       throw new ValidationException("Conversation not found.");
     }
 
-    return this.conversationRepository.findById(conversationId);
+    return membership;
   }
 
   async getOwnedMessageOrFail(userId, messageId, message) {
@@ -61,19 +84,7 @@ class MessageService extends BaseService {
     return messageRow;
   }
 
-  async serializeMessage(row) {
-    const [receiptRows, attachmentRows] = await Promise.all([
-      this.database.query(
-        `
-          SELECT user_id, delivered_at, read_at
-          FROM message_receipts
-          WHERE message_id = ?
-        `,
-        [row.message_id],
-      ),
-      this.attachmentRepository.listByMessageIds([row.message_id]),
-    ]);
-
+  formatSerializedMessage(row, receiptRows = [], attachmentRows = []) {
     return {
       ...this.serialize(row),
       isRead:
@@ -95,26 +106,114 @@ class MessageService extends BaseService {
     };
   }
 
+  async serializeMessage(row) {
+    if (row.is_archived) {
+      const receiptRows = parseJsonArray(row.receipts_json);
+      const attachmentRows = parseJsonArray(row.attachments_json);
+
+      return this.formatSerializedMessage(row, receiptRows, attachmentRows);
+    }
+
+    const [receiptRows, attachmentRows] = await Promise.all([
+      this.messageReceiptRepository.listByMessageId(row.message_id),
+      this.attachmentRepository.listByMessageId(row.message_id),
+    ]);
+
+    return this.formatSerializedMessage(row, receiptRows, attachmentRows);
+  }
+
+  groupRowsByMessageId(rows = []) {
+    return rows.reduce((grouped, row) => {
+      const messageRows = grouped.get(row.message_id) || [];
+      messageRows.push(row);
+      grouped.set(row.message_id, messageRows);
+      return grouped;
+    }, new Map());
+  }
+
+  async serializeMessages(rows = []) {
+    const hotRows = rows.filter((row) => !row.is_archived);
+    const hotMessageIds = hotRows.map((row) => row.message_id);
+    const [receiptRows, attachmentRows] = await Promise.all([
+      this.messageReceiptRepository.listByMessageIds(hotMessageIds),
+      this.attachmentRepository.listByMessageIds(hotMessageIds),
+    ]);
+    const receiptsByMessageId = this.groupRowsByMessageId(receiptRows);
+    const attachmentsByMessageId = this.groupRowsByMessageId(attachmentRows);
+
+    return rows.map((row) => {
+      if (row.is_archived) {
+        return this.formatSerializedMessage(
+          row,
+          parseJsonArray(row.receipts_json),
+          parseJsonArray(row.attachments_json),
+        );
+      }
+
+      return this.formatSerializedMessage(
+        row,
+        receiptsByMessageId.get(row.message_id) || [],
+        attachmentsByMessageId.get(row.message_id) || [],
+      );
+    });
+  }
+
   async listMessages(userId, conversationId, options = {}) {
     await this.getConversationForUserOrFail(userId, conversationId);
+    const limit = Number(options.limit || MESSAGE_CACHE.RECENT_LIMIT);
+    const shouldCacheRecentMessages =
+      !options.beforeMessageId && limit === MESSAGE_CACHE.RECENT_LIMIT;
+    const cacheKey = shouldCacheRecentMessages
+      ? this.cacheService.recentConversationMessagesKey(conversationId, limit)
+      : null;
 
-    const rows = await this.messageRepository.listByConversation(
+    if (cacheKey) {
+      const cached = await this.cacheService.get(cacheKey);
+      if (cached) {
+        this.logger?.info?.(`[CACHE HIT] ${cacheKey}`, {
+          conversationId,
+          limit,
+        });
+        return cached;
+      }
+
+      this.logger?.info?.(`[CACHE MISS] ${cacheKey}`, {
+        conversationId,
+        limit,
+      });
+    }
+
+    const rows = await this.messageRepository.listByConversationWithArchive(
       conversationId,
       {
-        limit: options.limit,
+        limit,
         beforeMessageId: options.beforeMessageId,
       },
     );
-    const orderedRows = rows.reverse();
-    const messages = await Promise.all(
-      orderedRows.map((row) => this.serializeMessage(row)),
-    );
+    const nextCursor = rows.length ? rows[rows.length - 1].message_id : null;
+    const orderedRows = [...rows].reverse();
+    const messages = await this.serializeMessages(orderedRows);
 
-    return {
+    const result = {
       messages,
-      nextCursor: rows.length ? rows[rows.length - 1].message_id : null,
-      hasMore: rows.length === Number(options.limit || 30),
+      nextCursor,
+      hasMore: rows.length === limit,
     };
+
+    if (cacheKey) {
+      await this.cacheService.set(
+        cacheKey,
+        result,
+        MESSAGE_CACHE.RECENT_TTL_SECONDS,
+      );
+      this.logger?.info?.(`[CACHE SET] ${cacheKey}`, {
+        conversationId,
+        limit,
+        ttlSeconds: MESSAGE_CACHE.RECENT_TTL_SECONDS,
+      });
+    }
+
+    return result;
   }
 
   async getTargetConversation({
@@ -388,25 +487,59 @@ class MessageService extends BaseService {
 
   async markConversationDelivered(userId, conversationId) {
     await this.getConversationForUserOrFail(userId, conversationId);
-    await this.messageReceiptRepository.markDeliveredForUser(
+    const result = await this.messageReceiptRepository.markDeliveredForUser(
       conversationId,
       userId,
     );
+
+    if (result.affectedRows > 0) {
+      await this.cacheService.del(
+        this.cacheService.recentConversationMessagesKey(
+          conversationId,
+          MESSAGE_CACHE.RECENT_LIMIT,
+        ),
+      );
+    }
+
     return { conversationId, userId };
   }
 
   async markConversationRead(userId, conversationId) {
-    await this.getConversationForUserOrFail(userId, conversationId);
+    const membership = await this.getConversationMembershipForUserOrFail(
+      userId,
+      conversationId,
+    );
     const latestMessage =
       await this.messageRepository.findLatestByConversation(conversationId);
+    const latestMessageId = latestMessage?.message_id || null;
+    const lastReadMessageId = membership.last_read_message_id || null;
+
+    if (
+      !latestMessageId ||
+      Number(lastReadMessageId || 0) >= Number(latestMessageId)
+    ) {
+      return {
+        conversationId,
+        userId,
+        lastReadMessageId: latestMessageId,
+        unchanged: true,
+      };
+    }
+
     await this.messageReceiptRepository.markReadForUser(conversationId, userId);
     await this.conversationMemberRepository.markRead(
       conversationId,
       userId,
-      latestMessage?.message_id || null,
+      latestMessageId,
     );
 
     await this.cacheService.del(this.cacheService.userConversationsKey(userId));
+    await this.cacheService.del(
+      this.cacheService.recentConversationMessagesKey(
+        conversationId,
+        MESSAGE_CACHE.RECENT_LIMIT,
+      ),
+    );
 
     const memberIds =
       await this.conversationMemberRepository.listActiveMemberIds(
@@ -415,7 +548,7 @@ class MessageService extends BaseService {
     const payload = {
       conversationId,
       userId,
-      lastReadMessageId: latestMessage?.message_id || null,
+      lastReadMessageId: latestMessageId,
     };
 
     this.socketGateway.emitToUsers(memberIds, "message:read", payload);
@@ -430,7 +563,10 @@ class MessageService extends BaseService {
 
   async invalidateConversationCaches(conversationId, memberIds) {
     await this.cacheService.del(
-      this.cacheService.conversationMessagesKey(conversationId),
+      this.cacheService.recentConversationMessagesKey(
+        conversationId,
+        MESSAGE_CACHE.RECENT_LIMIT,
+      ),
     );
 
     for (const memberId of memberIds) {

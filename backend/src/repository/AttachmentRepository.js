@@ -5,6 +5,10 @@ class AttachmentRepository extends BaseRepository {
     super(database, "attachments", "attachment_id");
   }
 
+  async listByMessageId(messageId, connection = null) {
+    return this.listByMessageIds([messageId], connection);
+  }
+
   async listByMessageIds(messageIds = [], connection = null) {
     if (!messageIds.length) {
       return [];

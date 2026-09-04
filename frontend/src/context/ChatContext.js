@@ -77,7 +77,7 @@ export const ChatProvider = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
   const { showMessageNotification } = useToast();
   const { t } = useLocalization();
-  const { on, off, emit } = useSocket();
+  const { on, off, emit, isConnected } = useSocket();
   const [users, setUsers] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [messagesByConversation, setMessagesByConversation] = useState({});
@@ -133,6 +133,12 @@ export const ChatProvider = ({ children }) => {
     setActiveConversation(null);
     setNotificationSettings({ muteAll: false, mutedUserIds: [] });
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated && isConnected) {
+      refreshChatData();
+    }
+  }, [isAuthenticated, isConnected]);
 
   useEffect(() => {
     const loadNotificationSettings = async () => {

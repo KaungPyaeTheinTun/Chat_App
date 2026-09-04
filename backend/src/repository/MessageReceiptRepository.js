@@ -25,7 +25,7 @@ class MessageReceiptRepository extends BaseRepository {
   }
 
   async markDeliveredForUser(conversationId, userId) {
-    await this.db.execute(
+    return this.db.execute(
       `
         UPDATE message_receipts
         SET delivered_at = COALESCE(delivered_at, CURRENT_TIMESTAMP),
@@ -37,7 +37,7 @@ class MessageReceiptRepository extends BaseRepository {
   }
 
   async markReadForUser(conversationId, userId) {
-    await this.db.execute(
+    return this.db.execute(
       `
         UPDATE message_receipts
         SET delivered_at = COALESCE(delivered_at, CURRENT_TIMESTAMP),
@@ -46,6 +46,28 @@ class MessageReceiptRepository extends BaseRepository {
         WHERE conversation_id = ? AND user_id = ? AND read_at IS NULL
       `,
       [conversationId, userId],
+    );
+  }
+
+  async listByMessageId(messageId, connection = null) {
+    return this.listByMessageIds([messageId], connection);
+  }
+
+  async listByMessageIds(messageIds = [], connection = null) {
+    if (!messageIds.length) {
+      return [];
+    }
+
+    const placeholders = messageIds.map(() => "?").join(", ");
+    return this.db.query(
+      `
+        SELECT user_id, message_id, delivered_at, read_at
+        FROM message_receipts
+        WHERE message_id IN (${placeholders})
+        ORDER BY message_receipt_id ASC
+      `,
+      messageIds,
+      connection,
     );
   }
 

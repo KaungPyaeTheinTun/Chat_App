@@ -19,6 +19,7 @@ class ServiceFactory {
     const userService = new UserService({
       userRepository: repositories.userRepository,
       deviceTokenRepository: repositories.deviceTokenRepository,
+      conversationMemberRepository: repositories.conversationMemberRepository,
       ...shared,
     });
 

@@ -30,8 +30,12 @@ class CacheService {
     return `${CACHE_KEYS.USER_CONVERSATIONS}${userId}`;
   }
 
-  conversationMessagesKey(conversationId) {
-    return `${CACHE_KEYS.CONVERSATION_MESSAGES}${conversationId}`;
+  conversationMessagesKey(conversationId, suffix = "recent") {
+    return `${CACHE_KEYS.CONVERSATION_MESSAGES}${conversationId}:${suffix}`;
+  }
+
+  recentConversationMessagesKey(conversationId, limit) {
+    return this.conversationMessagesKey(conversationId, `recent:${limit}`);
   }
 }
 

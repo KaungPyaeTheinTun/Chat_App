@@ -123,11 +123,9 @@ export default function LanguageSettingsScreen({ navigation }) {
       >
         <View
           style={{
-            borderRadius: 24,
+            borderRadius: 18,
             overflow: "hidden",
-            backgroundColor: colors.cardGlass,
-            borderWidth: 1,
-            borderColor: colors.border,
+            backgroundColor: "transparent",
           }}
         >
           {filteredLanguages.length ? (
@@ -140,15 +138,15 @@ export default function LanguageSettingsScreen({ navigation }) {
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
-                      paddingHorizontal: 16,
-                      paddingVertical: 15,
+                      paddingHorizontal: 4,
+                      paddingVertical: 10,
                     }}
                   >
                     <View
                       style={{
-                        width: 42,
-                        height: 42,
-                        borderRadius: 21,
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
                         alignItems: "center",
                         justifyContent: "center",
                         backgroundColor: colors.iconSurface,
@@ -157,7 +155,7 @@ export default function LanguageSettingsScreen({ navigation }) {
                     >
                       <Image
                         source={{ uri: item.flagUri }}
-                        style={{ width: 42, height: 42 }}
+                        style={{ width: 36, height: 36 }}
                         resizeMode="cover"
                       />
                     </View>
@@ -175,13 +173,13 @@ export default function LanguageSettingsScreen({ navigation }) {
                     {isSelected ? (
                       <Ionicons
                         name="checkmark-circle"
-                        size={23}
+                        size={21}
                         color={colors.primary}
                       />
                     ) : (
                       <Ionicons
                         name="ellipse-outline"
-                        size={23}
+                        size={21}
                         color={colors.subtext}
                       />
                     )}
@@ -190,7 +188,7 @@ export default function LanguageSettingsScreen({ navigation }) {
                     <View
                       style={{
                         height: 1,
-                        marginLeft: 70,
+                        marginLeft: 52,
                         backgroundColor: colors.divider,
                       }}
                     />

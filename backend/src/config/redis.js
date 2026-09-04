@@ -55,7 +55,17 @@ class RedisClient {
       return value ? JSON.parse(value) : null;
     }
 
-    return this.memory.get(key) ?? null;
+    const cached = this.memory.get(key);
+    if (!cached) {
+      return null;
+    }
+
+    if (cached.expiresAt && cached.expiresAt <= Date.now()) {
+      this.memory.delete(key);
+      return null;
+    }
+
+    return cached.value;
   }
 
   async set(key, value, ttlSeconds = 300) {
@@ -64,7 +74,10 @@ class RedisClient {
       return;
     }
 
-    this.memory.set(key, value);
+    this.memory.set(key, {
+      value,
+      expiresAt: ttlSeconds ? Date.now() + ttlSeconds * 1000 : null,
+    });
   }
 
   async del(key) {
@@ -85,8 +98,12 @@ class RedisClient {
       return nextValue;
     }
 
-    const nextValue = Number(this.memory.get(key) || 0) + 1;
-    this.memory.set(key, nextValue);
+    const current = await this.get(key);
+    const nextValue = Number(current || 0) + 1;
+    this.memory.set(key, {
+      value: nextValue,
+      expiresAt: Date.now() + ttlSeconds * 1000,
+    });
     return nextValue;
   }
 

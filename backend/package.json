@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "archive:messages": "node scripts/archiveOldMessages.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
