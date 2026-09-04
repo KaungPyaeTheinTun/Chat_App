@@ -9,7 +9,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import ConfirmationModal from "../../components/ConfirmationModal";
@@ -628,7 +628,8 @@ export default function ChatListScreen({ navigation }) {
                     label: selectedConversation.isPinned
                       ? t("chatListUnpin")
                       : t("chatListPin"),
-                    icon: "pin-outline",
+                    icon: "thumbtack",
+                    iconFamily: "fontawesome",
                     onPress: () =>
                       togglePreference(selectedConversation, "isPinned"),
                   },
@@ -669,11 +670,19 @@ export default function ChatListScreen({ navigation }) {
                       >
                         {action.label}
                       </Text>
-                      <Ionicons
-                        name={action.icon}
-                        size={20}
-                        color={action.danger ? colors.danger : colors.subtext}
-                      />
+                      {action.iconFamily === "fontawesome" ? (
+                        <FontAwesome6
+                          name={action.icon}
+                          size={18}
+                          color={action.danger ? colors.danger : colors.subtext}
+                        />
+                      ) : (
+                        <Ionicons
+                          name={action.icon}
+                          size={20}
+                          color={action.danger ? colors.danger : colors.subtext}
+                        />
+                      )}
                     </Pressable>
                     {index < items.length - 1 ? (
                       <View

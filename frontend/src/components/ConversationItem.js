@@ -48,87 +48,107 @@ export default function ConversationItem({
         />
       </View>
 
-      <View style={{ flex: 1 }}>
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Text
-            numberOfLines={1}
-            style={{
-              flexShrink: 1,
-              fontSize: 17,
-              fontWeight: "700",
-              color: colors.text,
-            }}
-          >
-            {title}
-          </Text>
-          {conversation.isMuted ? (
-            <FontAwesome6
-              name="volume-xmark"
-              size={15}
-              color={colors.subtext}
-              style={{ marginLeft: 6 }}
-            />
-          ) : null}
-        </View>
-        <Text
-          numberOfLines={1}
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <View
           style={{
-            marginTop: 4,
-            color: isUnread ? colors.text : colors.subtext,
-            fontWeight: isUnread ? "600" : "400",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
           }}
         >
-          {conversationPreview(conversation, t)}
-        </Text>
-      </View>
-
-      <View style={{ alignItems: "flex-end", marginLeft: 12 }}>
-        {conversation.isPinned ? (
-          <View
-            style={[pinDateBadge, { backgroundColor: colors.surfaceMuted }]}
-          >
-            <FontAwesome6 name="thumbtack" size={13} color={colors.subtext} />
-            <Text style={[pinDateText, { color: colors.subtext }]}>
-              {dateLabel}
-            </Text>
-          </View>
-        ) : (
-          <Text
-            style={{
-              color: colors.subtext,
-              fontSize: 11,
-              fontWeight: isUnread ? "600" : "500",
-            }}
-          >
-            {dateLabel}
-          </Text>
-        )}
-        {isUnread ? (
           <View
             style={{
-              minWidth: 23,
-              height: 23,
-              marginTop: conversation.isPinned ? 7 : 10,
-              paddingHorizontal: 6,
-              borderRadius: 11.5,
+              flex: 1,
+              minWidth: 0,
+              flexDirection: "row",
               alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: colors.primary,
+              marginRight: 10,
             }}
           >
             <Text
+              numberOfLines={1}
               style={{
-                color: "#ffffff",
-                fontSize: 11,
+                flexShrink: 1,
+                fontSize: 17,
                 fontWeight: "700",
+                color: colors.text,
               }}
             >
-              {unreadCount > 99 ? "99+" : unreadCount}
+              {title}
             </Text>
+            {conversation.isMuted ? (
+              <FontAwesome6
+                name="volume-xmark"
+                size={15}
+                color={colors.subtext}
+                style={{ marginLeft: 6 }}
+              />
+            ) : null}
           </View>
-        ) : (
-          <View style={{ height: 23, marginTop: 10 }} />
-        )}
+          {conversation.isPinned ? (
+            <View
+              style={[pinDateBadge, { backgroundColor: colors.surfaceMuted }]}
+            >
+              <FontAwesome6 name="thumbtack" size={13} color={colors.subtext} />
+              <Text style={[pinDateText, { color: colors.subtext }]}>
+                {dateLabel}
+              </Text>
+            </View>
+          ) : (
+            <Text
+              style={{
+                color: colors.subtext,
+                fontSize: 11,
+                fontWeight: isUnread ? "600" : "500",
+              }}
+            >
+              {dateLabel}
+            </Text>
+          )}
+        </View>
+
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginTop: 4,
+          }}
+        >
+          <Text
+            numberOfLines={1}
+            style={{
+              flex: 1,
+              color: isUnread ? colors.text : colors.subtext,
+              fontWeight: isUnread ? "600" : "400",
+            }}
+          >
+            {conversationPreview(conversation, t)}
+          </Text>
+          {isUnread ? (
+            <View
+              style={{
+                minWidth: 23,
+                height: 23,
+                marginLeft: 10,
+                paddingHorizontal: 6,
+                borderRadius: 11.5,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: colors.primary,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#ffffff",
+                  fontSize: 11,
+                  fontWeight: "700",
+                }}
+              >
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </Text>
+            </View>
+          ) : null}
+        </View>
       </View>
     </Pressable>
   );
