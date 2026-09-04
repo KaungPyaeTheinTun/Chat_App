@@ -7,11 +7,13 @@ import {
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
   useWindowDimensions,
 } from "react-native";
+import * as Clipboard from "expo-clipboard";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
@@ -41,10 +43,13 @@ export default function ChatScreen({ route, navigation }) {
     activeConversation,
     activeMessages,
     activePagination,
+    conversations,
+    users,
     typingUsers,
     loadOlderMessages,
     sendMessage,
     sendImageMessage,
+    forwardMessage,
     retryMessage,
     editMessage,
     deleteMessage,
@@ -69,6 +74,12 @@ export default function ChatScreen({ route, navigation }) {
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [confirmation, setConfirmation] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
+  const [replyMessage, setReplyMessage] = useState(null);
+  const [forwardingMessage, setForwardingMessage] = useState(null);
+  const [selectedForwardTargetKeys, setSelectedForwardTargetKeys] = useState(
+    [],
+  );
+  const [isForwarding, setIsForwarding] = useState(false);
   const [viewerImage, setViewerImage] = useState(null);
   const [composerValue, setComposerValue] = useState("");
   const [composerHeight, setComposerHeight] = useState(118);
@@ -150,8 +161,12 @@ export default function ChatScreen({ route, navigation }) {
   const resetComposer = () => {
     setComposerValue("");
     setEditingMessage(null);
+    setReplyMessage(null);
     stopTyping(activeConversation?.conversationId);
   };
+
+  const getMessagePreview = (message) =>
+    message?.messageType === "image" ? t("commonPhoto") : message?.content;
 
   const handlePrimaryAction = async () => {
     const content = composerValue.trim();
@@ -170,6 +185,7 @@ export default function ChatScreen({ route, navigation }) {
           conversationId: activeConversation?.conversationId,
           content,
           messageType: "text",
+          replyToMessage: replyMessage,
         });
       }
 
@@ -212,7 +228,9 @@ export default function ChatScreen({ route, navigation }) {
         receiverId: peerUser?.userId,
         conversationId: activeConversation?.conversationId,
         asset: result.assets[0],
+        replyToMessage: replyMessage,
       });
+      setReplyMessage(null);
     } catch (error) {
       showError(getErrorMessage(error, t("chatUnableSendImage")));
     }
@@ -240,6 +258,49 @@ export default function ChatScreen({ route, navigation }) {
     setEditingMessage(selectedMessage.message);
     setComposerValue(selectedMessage.message.content);
     closeMessageMenu();
+  };
+
+  const beginReply = () => {
+    const message = selectedMessage?.message;
+    if (!message) {
+      return;
+    }
+
+    if (String(message.messageId).startsWith("local-")) {
+      closeMessageMenu();
+      showError(t("chatUnableSend"));
+      return;
+    }
+
+    setEditingMessage(null);
+    setReplyMessage(message);
+    closeMessageMenu();
+  };
+
+  const beginForward = () => {
+    const message = selectedMessage?.message;
+    if (!message) {
+      return;
+    }
+
+    if (String(message.messageId).startsWith("local-")) {
+      closeMessageMenu();
+      showError(t("chatUnableForward"));
+      return;
+    }
+
+    setSelectedForwardTargetKeys([]);
+    setForwardingMessage(message);
+    closeMessageMenu();
+  };
+
+  const closeForwardPicker = () => {
+    if (isForwarding) {
+      return;
+    }
+
+    setForwardingMessage(null);
+    setSelectedForwardTargetKeys([]);
   };
 
   const confirmDelete = () => {
@@ -292,9 +353,117 @@ export default function ChatScreen({ route, navigation }) {
     showSuccess(t("chatReactionSoon", { reaction }));
   };
 
-  const handlePendingAction = (label) => {
-    closeMessageMenu();
-    showSuccess(t("chatFeatureSoon", { label }));
+  const copySelectedMessage = async () => {
+    const message = selectedMessage?.message;
+    const copiedText =
+      message?.messageType === "image"
+        ? resolveMediaUrl(message.content)
+        : message?.content;
+
+    if (!copiedText) {
+      closeMessageMenu();
+      showError(t("chatUnableCopy"));
+      return;
+    }
+
+    try {
+      await Clipboard.setStringAsync(copiedText);
+      closeMessageMenu();
+      showSuccess(t("chatCopied"));
+    } catch (_error) {
+      closeMessageMenu();
+      showError(t("chatUnableCopy"));
+    }
+  };
+
+  const forwardTargets = useMemo(() => {
+    const directPeerIds = new Set(
+      conversations
+        .filter((conversation) => conversation.conversationType !== "group")
+        .map((conversation) => conversation.otherUser?.userId)
+        .filter(Boolean),
+    );
+    const conversationTargets = conversations.map((conversation) => {
+      const isGroup = conversation.conversationType === "group";
+      const title = isGroup
+        ? conversation.title || t("commonGroupChat")
+        : conversation.otherUser?.username || t("commonConversation");
+
+      return {
+        key: `conversation-${conversation.conversationId}`,
+        title,
+        subtitle: isGroup
+          ? t("commonMembersCount", {
+              count: conversation.members?.length || 0,
+            })
+          : conversation.otherUser?.status === "online"
+            ? t("commonActiveNow")
+            : t("commonOffline"),
+        avatarUser: isGroup
+          ? { username: title, avatarUrl: conversation.avatarUrl }
+          : conversation.otherUser,
+        conversationId: conversation.conversationId,
+      };
+    });
+    const userTargets = users
+      .filter(
+        (item) =>
+          item.userId !== user?.userId && !directPeerIds.has(item.userId),
+      )
+      .map((item) => ({
+        key: `user-${item.userId}`,
+        title: item.username,
+        subtitle:
+          item.status === "online" ? t("commonActiveNow") : t("commonOffline"),
+        avatarUser: item,
+        receiverId: item.userId,
+      }));
+
+    return [...conversationTargets, ...userTargets];
+  }, [conversations, t, user?.userId, users]);
+
+  const toggleForwardTarget = (targetKey) => {
+    setSelectedForwardTargetKeys((current) =>
+      current.includes(targetKey)
+        ? current.filter((key) => key !== targetKey)
+        : [...current, targetKey],
+    );
+  };
+
+  const handleForwardSelectedTargets = async () => {
+    if (
+      !forwardingMessage ||
+      !selectedForwardTargetKeys.length ||
+      isForwarding
+    ) {
+      return;
+    }
+
+    const selectedTargets = forwardTargets.filter((target) =>
+      selectedForwardTargetKeys.includes(target.key),
+    );
+
+    setIsForwarding(true);
+    try {
+      await Promise.all(
+        selectedTargets.map((target) =>
+          forwardMessage({
+            message: forwardingMessage,
+            receiverId: target.receiverId,
+            conversationId: target.conversationId,
+          }),
+        ),
+      );
+      setForwardingMessage(null);
+      setSelectedForwardTargetKeys([]);
+      showSuccess(
+        t("chatForwardedManySuccess", { count: selectedTargets.length }),
+      );
+    } catch (error) {
+      showError(getErrorMessage(error, t("chatUnableForward")));
+    } finally {
+      setIsForwarding(false);
+    }
   };
 
   const menuActions = useMemo(() => {
@@ -330,21 +499,21 @@ export default function ChatScreen({ route, navigation }) {
         label: t("chatCopy"),
         icon: "copy-outline",
         color: colors.text,
-        onPress: () => handlePendingAction(t("chatCopy")),
+        onPress: copySelectedMessage,
       },
       {
         key: "reply",
         label: t("chatReply"),
         icon: "return-up-back-outline",
         color: colors.text,
-        onPress: () => handlePendingAction(t("chatReply")),
+        onPress: beginReply,
       },
       {
         key: "forward",
         label: t("chatForward"),
         icon: "arrow-redo-outline",
         color: colors.text,
-        onPress: () => handlePendingAction(t("chatForward")),
+        onPress: beginForward,
       },
     );
 
@@ -531,6 +700,59 @@ export default function ChatScreen({ route, navigation }) {
               backgroundColor: colors.surface,
             }}
           >
+            {replyMessage && !editingMessage ? (
+              <View
+                style={{
+                  marginHorizontal: 14,
+                  marginTop: 8,
+                  marginBottom: 4,
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  borderRadius: 16,
+                  borderLeftWidth: 3,
+                  borderLeftColor: colors.primary,
+                  backgroundColor: colors.surfaceMuted,
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      color: colors.text,
+                      fontSize: 12,
+                      fontWeight: "700",
+                    }}
+                  >
+                    {t("chatReplyingToPreview")}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      marginTop: 2,
+                      color: colors.subtext,
+                      fontSize: 12,
+                    }}
+                  >
+                    {getMessagePreview(replyMessage)}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => setReplyMessage(null)}
+                  accessibilityLabel={t("chatCancelReply")}
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 15,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: colors.iconSurface,
+                  }}
+                >
+                  <Ionicons name="close" size={17} color={colors.subtext} />
+                </Pressable>
+              </View>
+            ) : null}
             <MessageInput
               value={composerValue}
               onChangeText={handleTyping}
@@ -598,6 +820,158 @@ export default function ChatScreen({ route, navigation }) {
             ) : null}
           </Pressable>
         </View>
+      </Modal>
+
+      <Modal
+        visible={Boolean(forwardingMessage)}
+        transparent
+        animationType="fade"
+        onRequestClose={closeForwardPicker}
+      >
+        <BlurView
+          tint={isDark ? "dark" : "light"}
+          intensity={55}
+          style={StyleSheet.absoluteFillObject}
+        />
+        <Pressable
+          onPress={closeForwardPicker}
+          style={{
+            flex: 1,
+            justifyContent: "flex-end",
+            backgroundColor: colors.overlay,
+          }}
+        >
+          <View
+            onStartShouldSetResponder={() => true}
+            style={{
+              marginHorizontal: 24,
+              marginBottom: Math.max(insets.bottom + 10, 24),
+              maxHeight: height * 0.62,
+              borderRadius: 26,
+              overflow: "hidden",
+              backgroundColor: colors.card,
+              shadowColor: "#000000",
+              shadowOpacity: 0.2,
+              shadowRadius: 30,
+              shadowOffset: { width: 0, height: 18 },
+              elevation: 14,
+            }}
+          >
+            <View
+              style={{
+                paddingHorizontal: 18,
+                paddingTop: 16,
+                paddingBottom: 12,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.divider,
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      color: colors.text,
+                      fontSize: 17,
+                      fontWeight: "700",
+                    }}
+                  >
+                    {t("chatForwardTo")}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={handleForwardSelectedTargets}
+                  disabled={!selectedForwardTargetKeys.length || isForwarding}
+                  style={{
+                    paddingHorizontal: 14,
+                    paddingVertical: 8,
+                    borderRadius: 18,
+                    backgroundColor:
+                      selectedForwardTargetKeys.length && !isForwarding
+                        ? colors.primary
+                        : colors.iconSurface,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color:
+                        selectedForwardTargetKeys.length && !isForwarding
+                          ? colors.white
+                          : colors.subtext,
+                      fontSize: 13,
+                      fontWeight: "800",
+                    }}
+                  >
+                    {isForwarding
+                      ? t("conversationPreviewSending")
+                      : `${t("commonSend")} (${selectedForwardTargetKeys.length})`}
+                  </Text>
+                </Pressable>
+              </View>
+              <Text
+                numberOfLines={1}
+                style={{
+                  marginTop: 4,
+                  color: colors.subtext,
+                  fontSize: 13,
+                }}
+              >
+                {getMessagePreview(forwardingMessage)}
+              </Text>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {forwardTargets.map((target) => {
+                const isSelected = selectedForwardTargetKeys.includes(
+                  target.key,
+                );
+
+                return (
+                  <Pressable
+                    key={target.key}
+                    onPress={() => toggleForwardTarget(target.key)}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      paddingHorizontal: 18,
+                      paddingVertical: 12,
+                      backgroundColor: isSelected
+                        ? colors.surfaceMuted
+                        : "transparent",
+                    }}
+                  >
+                    <UserAvatar user={target.avatarUser} size={42} />
+                    <View style={{ marginLeft: 12, flex: 1 }}>
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          color: colors.text,
+                          fontSize: 15,
+                          fontWeight: "700",
+                        }}
+                      >
+                        {target.title}
+                      </Text>
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          marginTop: 3,
+                          color: colors.subtext,
+                          fontSize: 12,
+                        }}
+                      >
+                        {target.subtitle}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name={isSelected ? "checkmark-circle" : "ellipse-outline"}
+                      size={23}
+                      color={isSelected ? colors.primary : colors.subtext}
+                    />
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </Pressable>
       </Modal>
 
       <Modal

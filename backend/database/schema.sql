@@ -64,6 +64,8 @@ CREATE TABLE IF NOT EXISTS messages (
   content TEXT NOT NULL,
   message_type ENUM('text', 'image', 'audio', 'video', 'document') DEFAULT 'text',
   delivery_state ENUM('sent', 'delivered', 'read') NOT NULL DEFAULT 'sent',
+  reply_to_message_id INT NULL,
+  forwarded_from_message_id INT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY unique_sender_client_message (sender_id, client_message_id),
@@ -76,9 +78,17 @@ CREATE TABLE IF NOT EXISTS messages (
   CONSTRAINT fk_messages_receiver
     FOREIGN KEY (receiver_id) REFERENCES users(user_id)
     ON DELETE SET NULL,
+  CONSTRAINT fk_messages_reply_to
+    FOREIGN KEY (reply_to_message_id) REFERENCES messages(message_id)
+    ON DELETE SET NULL,
+  CONSTRAINT fk_messages_forwarded_from
+    FOREIGN KEY (forwarded_from_message_id) REFERENCES messages(message_id)
+    ON DELETE SET NULL,
   INDEX idx_messages_conversation_cursor (conversation_id, message_id),
   INDEX idx_messages_sender (sender_id),
-  INDEX idx_messages_receiver (receiver_id)
+  INDEX idx_messages_receiver (receiver_id),
+  INDEX idx_messages_reply_to (reply_to_message_id),
+  INDEX idx_messages_forwarded_from (forwarded_from_message_id)
 );
 
 CREATE TABLE IF NOT EXISTS message_receipts (
@@ -127,6 +137,8 @@ CREATE TABLE IF NOT EXISTS messages_archive (
   content TEXT NOT NULL,
   message_type ENUM('text', 'image', 'audio', 'video', 'document') DEFAULT 'text',
   delivery_state ENUM('sent', 'delivered', 'read') NOT NULL DEFAULT 'sent',
+  reply_to_message_id INT NULL,
+  forwarded_from_message_id INT NULL,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NULL,
   receipts_json JSON NULL,
@@ -134,7 +146,9 @@ CREATE TABLE IF NOT EXISTS messages_archive (
   archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (message_id, created_at),
   INDEX idx_messages_archive_conversation_cursor (conversation_id, message_id),
-  INDEX idx_messages_archive_created_at (created_at)
+  INDEX idx_messages_archive_created_at (created_at),
+  INDEX idx_messages_archive_reply_to (reply_to_message_id),
+  INDEX idx_messages_archive_forwarded_from (forwarded_from_message_id)
 )
 PARTITION BY RANGE COLUMNS(created_at) (
   PARTITION p_before_2026 VALUES LESS THAN ('2026-01-01'),

@@ -49,6 +49,8 @@ class MessageRepository extends BaseRepository {
         content TEXT NOT NULL,
         message_type ENUM('text', 'image', 'audio', 'video', 'document') DEFAULT 'text',
         delivery_state ENUM('sent', 'delivered', 'read') NOT NULL DEFAULT 'sent',
+        reply_to_message_id INT NULL,
+        forwarded_from_message_id INT NULL,
         created_at DATETIME NOT NULL,
         updated_at DATETIME NULL,
         receipts_json JSON NULL,
@@ -56,7 +58,9 @@ class MessageRepository extends BaseRepository {
         archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (message_id, created_at),
         INDEX idx_messages_archive_conversation_cursor (conversation_id, message_id),
-        INDEX idx_messages_archive_created_at (created_at)
+        INDEX idx_messages_archive_created_at (created_at),
+        INDEX idx_messages_archive_reply_to (reply_to_message_id),
+        INDEX idx_messages_archive_forwarded_from (forwarded_from_message_id)
       )
       PARTITION BY RANGE COLUMNS(created_at) (
         PARTITION p_before_2026 VALUES LESS THAN ('2026-01-01'),
@@ -109,6 +113,8 @@ class MessageRepository extends BaseRepository {
           content,
           message_type,
           delivery_state,
+          reply_to_message_id,
+          forwarded_from_message_id,
           created_at,
           updated_at,
           receipts_json,
@@ -181,6 +187,23 @@ class MessageRepository extends BaseRepository {
     return rows[0] || null;
   }
 
+  async findByIds(messageIds = [], connection = null) {
+    if (!messageIds.length) {
+      return [];
+    }
+
+    const placeholders = messageIds.map(() => "?").join(", ");
+    return this.db.query(
+      `
+        SELECT *
+        FROM messages
+        WHERE message_id IN (${placeholders})
+      `,
+      messageIds,
+      connection,
+    );
+  }
+
   async listArchivableBefore(cutoffDate, limit = 500, connection = null) {
     return this.db.query(
       `
@@ -221,15 +244,19 @@ class MessageRepository extends BaseRepository {
           content,
           message_type,
           delivery_state,
+        reply_to_message_id,
+        forwarded_from_message_id,
           created_at,
           updated_at,
           receipts_json,
           attachments_json
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
           content = VALUES(content),
           delivery_state = VALUES(delivery_state),
+          reply_to_message_id = VALUES(reply_to_message_id),
+          forwarded_from_message_id = VALUES(forwarded_from_message_id),
           updated_at = VALUES(updated_at),
           receipts_json = VALUES(receipts_json),
           attachments_json = VALUES(attachments_json),
@@ -244,6 +271,8 @@ class MessageRepository extends BaseRepository {
         message.content,
         message.message_type,
         message.delivery_state,
+        message.reply_to_message_id,
+        message.forwarded_from_message_id,
         message.created_at,
         message.updated_at,
         JSON.stringify(receipts),

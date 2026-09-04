@@ -11,6 +11,12 @@ class Message {
     this.content = data.content || null;
     this.messageType = data.message_type || data.messageType || "text";
     this.deliveryState = data.delivery_state || data.deliveryState || "sent";
+    this.replyToMessageId =
+      data.reply_to_message_id || data.replyToMessageId || null;
+    this.forwardedFromMessageId =
+      data.forwarded_from_message_id || data.forwardedFromMessageId || null;
+    this.repliedMessage = data.repliedMessage || null;
+    this.forwardedFromMessage = data.forwardedFromMessage || null;
     this.createdAt = data.created_at || data.createdAt || null;
     this.updatedAt = data.updated_at || data.updatedAt || null;
   }
@@ -41,6 +47,10 @@ class Message {
       content: this.content,
       messageType: this.messageType,
       deliveryState: this.deliveryState,
+      replyToMessageId: this.replyToMessageId,
+      forwardedFromMessageId: this.forwardedFromMessageId,
+      repliedMessage: this.repliedMessage,
+      forwardedFromMessage: this.forwardedFromMessage,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };

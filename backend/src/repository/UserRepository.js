@@ -17,6 +17,24 @@ class UserRepository extends BaseRepository {
     return this.findOneBy({ username }, connection);
   }
 
+  async createIfEmailMissing(user, connection = null) {
+    const existing = await this.findByEmail(user.email, connection);
+    if (existing) {
+      return existing;
+    }
+
+    return this.create(
+      {
+        username: user.username,
+        email: user.email,
+        password: user.password,
+        avatar_url: user.avatarUrl || null,
+        status: user.status || "offline",
+      },
+      connection,
+    );
+  }
+
   async list(excludeUserId, limit = 50, offset = 0) {
     return this.db.query(
       `

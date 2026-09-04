@@ -23,6 +23,8 @@ const createService = (overrides = {}) => {
         content: payload.content,
         message_type: payload.message_type,
         delivery_state: payload.delivery_state,
+        reply_to_message_id: payload.reply_to_message_id,
+        forwarded_from_message_id: payload.forwarded_from_message_id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }),
@@ -38,6 +40,7 @@ const createService = (overrides = {}) => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }),
+      findByIds: async () => [],
       findLatestByConversation: async () => null,
       listByConversationWithArchive: async () => [],
       ...overrides.messageRepository,
@@ -125,6 +128,236 @@ test("sendMessage returns payload and emits enterprise events", async () => {
   assert.equal(result.message.content, "hello");
   assert.equal(emitted.length, 2);
   assert.equal(emitted[0][2], "message:received");
+});
+
+test("sendMessage stores valid reply metadata", async () => {
+  let createdPayload = null;
+  const { service } = createService({
+    messageRepository: {
+      create: async (payload) => {
+        createdPayload = payload;
+        return {
+          message_id: 77,
+          client_message_id: payload.client_message_id,
+          conversation_id: 11,
+          sender_id: payload.sender_id,
+          receiver_id: payload.receiver_id,
+          content: payload.content,
+          message_type: payload.message_type,
+          delivery_state: payload.delivery_state,
+          reply_to_message_id: payload.reply_to_message_id,
+          forwarded_from_message_id: payload.forwarded_from_message_id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+      },
+      findById: async (messageId) =>
+        messageId === 77
+          ? {
+              message_id: 77,
+              client_message_id: createdPayload.client_message_id,
+              conversation_id: 11,
+              sender_id: 1,
+              receiver_id: 2,
+              content: createdPayload.content,
+              message_type: createdPayload.message_type,
+              delivery_state: createdPayload.delivery_state,
+              reply_to_message_id: createdPayload.reply_to_message_id,
+              forwarded_from_message_id:
+                createdPayload.forwarded_from_message_id,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }
+          : {
+              message_id: messageId,
+              client_message_id: "reply-client",
+              conversation_id: 11,
+              sender_id: 2,
+              receiver_id: 1,
+              content: "original",
+              message_type: "text",
+              delivery_state: "sent",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+      findByIds: async (messageIds) =>
+        messageIds.map((messageId) => ({
+          message_id: messageId,
+          conversation_id: 11,
+          sender_id: 2,
+          content: "original",
+          message_type: "text",
+          created_at: new Date().toISOString(),
+        })),
+    },
+  });
+
+  const result = await service.sendMessage({
+    senderId: 1,
+    receiverId: 2,
+    content: "reply",
+    replyToMessageId: 10,
+  });
+
+  assert.equal(result.message.replyToMessageId, 10);
+  assert.equal(result.message.repliedMessage.messageId, 10);
+});
+
+test("sendMessage rejects replies to another conversation", async () => {
+  const { service } = createService({
+    messageRepository: {
+      findById: async (messageId) => ({
+        message_id: messageId,
+        conversation_id: messageId === 10 ? 99 : 11,
+        sender_id: 2,
+        receiver_id: 1,
+        content: "other conversation",
+        message_type: "text",
+        delivery_state: "sent",
+      }),
+    },
+  });
+
+  await assert.rejects(
+    () =>
+      service.sendMessage({
+        senderId: 1,
+        receiverId: 2,
+        content: "reply",
+        replyToMessageId: 10,
+      }),
+    ValidationException,
+  );
+});
+
+test("forwardMessage copies source message into target conversation", async () => {
+  let createdPayload = null;
+  const { service } = createService({
+    messageRepository: {
+      create: async (payload) => {
+        createdPayload = payload;
+        return {
+          message_id: 77,
+          client_message_id: payload.client_message_id,
+          conversation_id: 11,
+          sender_id: payload.sender_id,
+          receiver_id: payload.receiver_id,
+          content: payload.content,
+          message_type: payload.message_type,
+          delivery_state: payload.delivery_state,
+          reply_to_message_id: payload.reply_to_message_id,
+          forwarded_from_message_id: payload.forwarded_from_message_id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+      },
+      findById: async (messageId) =>
+        messageId === 77
+          ? {
+              message_id: 77,
+              client_message_id: createdPayload.client_message_id,
+              conversation_id: 11,
+              sender_id: 1,
+              receiver_id: 2,
+              content: createdPayload.content,
+              message_type: createdPayload.message_type,
+              delivery_state: createdPayload.delivery_state,
+              reply_to_message_id: createdPayload.reply_to_message_id,
+              forwarded_from_message_id:
+                createdPayload.forwarded_from_message_id,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }
+          : {
+              message_id: messageId,
+              client_message_id: "source-client",
+              conversation_id: 11,
+              sender_id: 2,
+              receiver_id: 1,
+              content: "forward me",
+              message_type: "text",
+              delivery_state: "sent",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+      findByIds: async (messageIds) =>
+        messageIds.map((messageId) => ({
+          message_id: messageId,
+          conversation_id: 11,
+          sender_id: 2,
+          content: "forward me",
+          message_type: "text",
+          created_at: new Date().toISOString(),
+        })),
+    },
+  });
+
+  const result = await service.forwardMessage({
+    senderId: 1,
+    sourceMessageId: 10,
+    receiverId: 2,
+  });
+
+  assert.equal(result.message.content, "forward me");
+  assert.equal(result.message.forwardedFromMessageId, 10);
+});
+
+test("forwardMessage can target an existing conversation without receiverId", async () => {
+  let createdPayload = null;
+  const { service } = createService({
+    messageRepository: {
+      create: async (payload) => {
+        createdPayload = payload;
+        return {
+          message_id: 77,
+          client_message_id: payload.client_message_id,
+          conversation_id: 11,
+          sender_id: payload.sender_id,
+          receiver_id: payload.receiver_id,
+          content: payload.content,
+          message_type: payload.message_type,
+          delivery_state: payload.delivery_state,
+          forwarded_from_message_id: payload.forwarded_from_message_id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+      },
+      findById: async (messageId) =>
+        messageId === 77
+          ? {
+              message_id: 77,
+              client_message_id: createdPayload.client_message_id,
+              conversation_id: 11,
+              sender_id: 1,
+              receiver_id: createdPayload.receiver_id,
+              content: createdPayload.content,
+              message_type: createdPayload.message_type,
+              delivery_state: createdPayload.delivery_state,
+              forwarded_from_message_id:
+                createdPayload.forwarded_from_message_id,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }
+          : {
+              message_id: messageId,
+              conversation_id: 11,
+              sender_id: 2,
+              receiver_id: 1,
+              content: "forward me",
+              message_type: "text",
+              delivery_state: "sent",
+            },
+    },
+  });
+
+  const result = await service.forwardMessage({
+    senderId: 1,
+    sourceMessageId: 10,
+    conversationId: 11,
+  });
+
+  assert.equal(result.message.receiverId, null);
+  assert.equal(result.message.forwardedFromMessageId, 10);
 });
 
 test("markConversationRead rejects missing conversations", async () => {

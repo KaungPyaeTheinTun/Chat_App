@@ -1,6 +1,7 @@
 import React, { useRef } from "react";
 import { Image, Pressable, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useLocalization } from "../context/LocalizationContext";
 import { useTheme } from "../context/ThemeContext";
 import { formatTime } from "../utils/formatters";
 import { resolveMediaUrl } from "../utils/media";
@@ -16,9 +17,16 @@ export default function MessageBubble({
   bubbleStyle,
 }) {
   const { colors } = useTheme();
+  const { t } = useLocalization();
   const didLongPressRef = useRef(false);
   const imageUri =
     message.messageType === "image" ? resolveMediaUrl(message.content) : null;
+  const repliedMessage = message.repliedMessage;
+  const forwardedFromMessage = message.forwardedFromMessage;
+  const quoteText =
+    repliedMessage?.messageType === "image"
+      ? t("commonPhoto")
+      : repliedMessage?.content;
   const renderMineStatus = ({
     failedColor = "#ffe1e1",
     pendingColor = "rgba(255,255,255,0.68)",
@@ -127,6 +135,81 @@ export default function MessageBubble({
           ...(bubbleStyle || {}),
         }}
       >
+        {forwardedFromMessage ? (
+          <View
+            style={{
+              marginBottom: 6,
+              flexDirection: "row",
+              alignItems: "center",
+              alignSelf: "flex-start",
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              borderRadius: 999,
+              backgroundColor: imageUri
+                ? "rgba(0,0,0,0.45)"
+                : isMine
+                  ? "rgba(255,255,255,0.16)"
+                  : colors.surfaceMuted,
+            }}
+          >
+            <Ionicons
+              name="arrow-redo-outline"
+              size={12}
+              color={imageUri || isMine ? "#ffffff" : colors.subtext}
+            />
+            <Text
+              style={{
+                marginLeft: 4,
+                color: imageUri || isMine ? "#ffffff" : colors.subtext,
+                fontSize: 11,
+                fontWeight: "700",
+              }}
+            >
+              {t("chatForwarded")}
+            </Text>
+          </View>
+        ) : null}
+
+        {repliedMessage ? (
+          <View
+            style={{
+              marginBottom: 6,
+              paddingHorizontal: 10,
+              paddingVertical: 7,
+              borderRadius: 12,
+              borderLeftWidth: 3,
+              borderLeftColor: imageUri || isMine ? "#ffffff" : colors.primary,
+              backgroundColor: imageUri
+                ? "rgba(0,0,0,0.45)"
+                : isMine
+                  ? "rgba(255,255,255,0.16)"
+                  : colors.surfaceMuted,
+            }}
+          >
+            <Text
+              numberOfLines={1}
+              style={{
+                color: imageUri || isMine ? "#ffffff" : colors.text,
+                fontSize: 12,
+                fontWeight: "700",
+              }}
+            >
+              {t("chatReplyingTo")}
+            </Text>
+            <Text
+              numberOfLines={1}
+              style={{
+                marginTop: 2,
+                color:
+                  imageUri || isMine ? "rgba(255,255,255,0.8)" : colors.subtext,
+                fontSize: 12,
+              }}
+            >
+              {quoteText}
+            </Text>
+          </View>
+        ) : null}
+
         {imageUri ? (
           <View>
             <Image

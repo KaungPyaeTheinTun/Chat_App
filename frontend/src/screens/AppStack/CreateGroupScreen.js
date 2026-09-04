@@ -18,6 +18,9 @@ export default function CreateGroupScreen({ navigation }) {
   const [query, setQuery] = useState("");
   const [selectedMemberIds, setSelectedMemberIds] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
+  const canCreateGroup = Boolean(
+    groupTitle.trim() && selectedMemberIds.length && !isCreating,
+  );
 
   const filteredUsers = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -68,7 +71,8 @@ export default function CreateGroupScreen({ navigation }) {
         style={{
           paddingTop: insets.top + 12,
           paddingHorizontal: 20,
-          paddingBottom: 16,
+          paddingBottom: 14,
+          backgroundColor: colors.background,
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -89,20 +93,15 @@ export default function CreateGroupScreen({ navigation }) {
             </Text>
           </View>
         </View>
-      </View>
 
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{
-          paddingHorizontal: 20,
-          paddingBottom: 32,
-        }}
-        showsVerticalScrollIndicator={false}
-      >
         <View
           style={[
             card,
-            { backgroundColor: colors.card, borderColor: colors.border },
+            {
+              marginTop: 18,
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
           ]}
         >
           <Text style={[label, { color: colors.text }]}>
@@ -133,12 +132,21 @@ export default function CreateGroupScreen({ navigation }) {
             ]}
           />
         </View>
+      </View>
 
+      <ScrollView
+        style={{ flex: 1 }}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingBottom: 18,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
         <View
           style={[
             card,
             {
-              marginTop: 16,
               backgroundColor: colors.card,
               borderColor: colors.border,
             },
@@ -181,24 +189,38 @@ export default function CreateGroupScreen({ navigation }) {
             </Text>
           )}
         </View>
+      </ScrollView>
 
+      <View
+        style={{
+          paddingHorizontal: 20,
+          paddingTop: 10,
+          paddingBottom: insets.bottom + 16,
+          backgroundColor: colors.background,
+        }}
+      >
         <Pressable
           onPress={handleCreateGroup}
+          disabled={!canCreateGroup}
           style={[
             createButton,
             {
-              backgroundColor:
-                groupTitle.trim() && selectedMemberIds.length
-                  ? colors.primary
-                  : "#c8d7f8",
+              backgroundColor: canCreateGroup
+                ? colors.primary
+                : colors.primarySoft,
             },
           ]}
         >
-          <Text style={{ color: "#ffffff", fontWeight: "800" }}>
+          <Text
+            style={{
+              color: canCreateGroup ? colors.white : colors.primary,
+              fontWeight: "800",
+            }}
+          >
             {isCreating ? t("commonCreating") : t("createGroupTitle")}
           </Text>
         </Pressable>
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -236,7 +258,6 @@ const memberRow = {
 };
 
 const createButton = {
-  marginTop: 18,
   height: 50,
   borderRadius: 25,
   alignItems: "center",

@@ -34,85 +34,95 @@ export default function PeopleListScreen({ navigation }) {
   };
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{
-        paddingHorizontal: 20,
-        paddingTop: insets.top + 18,
-        paddingBottom: 120,
-      }}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-    >
-      <Text style={{ color: colors.text, fontSize: 28, fontWeight: "700" }}>
-        {t("peopleTitle")}
-      </Text>
-      <Text style={{ marginTop: 6, color: colors.subtext }}>
-        {t("peopleSubtitle")}
-      </Text>
-
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View
-        style={[
-          searchBox,
-          { backgroundColor: colors.card, borderColor: colors.border },
-        ]}
+        style={{
+          paddingHorizontal: 20,
+          paddingTop: insets.top + 18,
+          paddingBottom: 14,
+          backgroundColor: colors.background,
+        }}
       >
-        <Ionicons name="search-outline" size={19} color={colors.subtext} />
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder={t("commonSearchPeople")}
-          placeholderTextColor={colors.subtext}
-          style={{
-            flex: 1,
-            marginLeft: 10,
-            color: colors.text,
-            fontSize: 15,
-          }}
-        />
+        <Text style={{ color: colors.text, fontSize: 28, fontWeight: "700" }}>
+          {t("peopleTitle")}
+        </Text>
+        <Text style={{ marginTop: 6, color: colors.subtext }}>
+          {t("peopleSubtitle")}
+        </Text>
+
+        <View
+          style={[
+            searchBox,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Ionicons name="search-outline" size={19} color={colors.subtext} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t("commonSearchPeople")}
+            placeholderTextColor={colors.subtext}
+            style={{
+              flex: 1,
+              marginLeft: 10,
+              color: colors.text,
+              fontSize: 15,
+            }}
+          />
+        </View>
       </View>
 
-      <View style={[listCard, { backgroundColor: colors.card }]}>
-        {filteredUsers.length ? (
-          filteredUsers.map((user) => (
-            <Pressable
-              key={user.userId}
-              onPress={() => handleOpenUser(user)}
-              style={userRow}
-            >
-              <UserAvatar user={user} size={52} />
-              <View style={{ marginLeft: 12, flex: 1 }}>
-                <Text
-                  style={{
-                    color: colors.text,
-                    fontSize: 16,
-                    fontWeight: "800",
-                  }}
-                >
-                  {user.username}
-                </Text>
-                <Text style={{ marginTop: 4, color: colors.subtext }}>
-                  {user.status === "online"
-                    ? t("commonActiveNow")
-                    : t("commonOffline")}
-                </Text>
-              </View>
-              <Ionicons
-                name="chatbubble-outline"
-                size={20}
-                color={colors.subtext}
-              />
-            </Pressable>
-          ))
-        ) : (
-          <View style={{ paddingVertical: 18 }}>
-            <Text style={{ color: colors.subtext }}>
-              {t("commonNoPeopleFound")}
-            </Text>
-          </View>
-        )}
-      </View>
-    </ScrollView>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingBottom: 120,
+        }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[listCard, { backgroundColor: colors.card }]}>
+          {filteredUsers.length ? (
+            filteredUsers.map((user) => (
+              <Pressable
+                key={user.userId}
+                onPress={() => handleOpenUser(user)}
+                style={userRow}
+              >
+                <UserAvatar user={user} size={52} />
+                <View style={{ marginLeft: 12, flex: 1 }}>
+                  <Text
+                    style={{
+                      color: colors.text,
+                      fontSize: 16,
+                      fontWeight: "800",
+                    }}
+                  >
+                    {user.username}
+                  </Text>
+                  <Text style={{ marginTop: 4, color: colors.subtext }}>
+                    {user.status === "online"
+                      ? t("commonActiveNow")
+                      : t("commonOffline")}
+                  </Text>
+                </View>
+                <Ionicons
+                  name="chatbubble-outline"
+                  size={20}
+                  color={colors.subtext}
+                />
+              </Pressable>
+            ))
+          ) : (
+            <View style={{ paddingVertical: 18 }}>
+              <Text style={{ color: colors.subtext }}>
+                {t("commonNoPeopleFound")}
+              </Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 

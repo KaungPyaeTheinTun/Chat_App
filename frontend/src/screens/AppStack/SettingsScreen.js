@@ -8,15 +8,20 @@ import UserAvatar from "../../components/UserAvatar";
 import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
 import { useLocalization } from "../../context/LocalizationContext";
+import { useSocket } from "../../context/SocketContext";
 import { useTheme } from "../../context/ThemeContext";
 
 export default function SettingsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
+  const { isConnected } = useSocket();
   const { showSuccess } = useToast();
   const { colors, isDark, toggleTheme } = useTheme();
   const { t, language } = useLocalization();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const profileUser = user
+    ? { ...user, status: isConnected ? "online" : user.status }
+    : user;
 
   const pendingFeature = (label) => {
     showSuccess(t("commonSoon", { label }));
@@ -86,7 +91,7 @@ export default function SettingsScreen({ navigation }) {
             },
           ]}
         >
-          <UserAvatar user={user} size={58} />
+          <UserAvatar user={profileUser} size={58} />
           <View style={{ marginLeft: 14, flex: 1 }}>
             <Text
               style={{ color: colors.text, fontSize: 18, fontWeight: "700" }}

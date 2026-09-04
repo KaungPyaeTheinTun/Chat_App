@@ -7,7 +7,8 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "test": "node --test",
-    "archive:messages": "node scripts/archiveOldMessages.js"
+    "archive:messages": "node scripts/archiveOldMessages.js",
+    "seed:users": "node scripts/seedUsers.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

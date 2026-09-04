@@ -29,6 +29,9 @@ class MessageController extends BaseController {
         content: req.body.content,
         messageType: req.body.messageType,
         clientMessageId: req.body.clientMessageId,
+        replyToMessageId: req.body.replyToMessageId
+          ? Number(req.body.replyToMessageId)
+          : null,
       });
 
       return this.created(res, "Message sent successfully.", result);
@@ -46,11 +49,28 @@ class MessageController extends BaseController {
           ? Number(req.body.conversationId)
           : null,
         clientMessageId: req.body.clientMessageId,
+        replyToMessageId: req.body.replyToMessageId
+          ? Number(req.body.replyToMessageId)
+          : null,
         imagePath: `/uploads/messages/${req.file.filename}`,
         file: req.file,
       });
 
       return this.created(res, "Image message sent successfully.", result);
+    });
+
+    this.forward = this.handleRequest(async (req, res) => {
+      const result = await this.messageService.forwardMessage({
+        senderId: req.user.userId,
+        sourceMessageId: Number(req.params.id),
+        receiverId: req.body.receiverId ? Number(req.body.receiverId) : null,
+        conversationId: req.body.conversationId
+          ? Number(req.body.conversationId)
+          : null,
+        clientMessageId: req.body.clientMessageId,
+      });
+
+      return this.created(res, "Message forwarded successfully.", result);
     });
 
     this.edit = this.handleRequest(async (req, res) => {

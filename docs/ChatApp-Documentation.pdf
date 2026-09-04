@@ -1,0 +1,1875 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R 8 0 R 10 0 R 12 0 R 14 0 R 16 0 R 18 0 R 20 0 R 22 0 R 24 0 R 26 0 R 28 0 R 30 0 R 32 0 R 34 0 R 36 0 R] /Count 17 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 1284 >>
+stream
+BT
+/F1 10 Tf
+50 760 Td
+14 TL
+(ChatApp - React Native Real-Time Messaging Platform) Tj
+T*
+() Tj
+T*
+(ChatApp is a full-stack real-time chat application built with an Expo React Native mobile) Tj
+T*
+(client, an enterprise-style Node.js backend, Socket.io realtime communication, MySQL) Tj
+T*
+(persistence, and Redis-backed caching/presence.) Tj
+T*
+() Tj
+T*
+(The project was built as a practical messaging system with direct chats, group chats,) Tj
+T*
+(message states, image uploads, reply/forward support, profile management, dark/light mode,) Tj
+T*
+(localization, and a mobile-first chat UI.) Tj
+T*
+() Tj
+T*
+(Project Structure) Tj
+T*
+() Tj
+T*
+(```text) Tj
+T*
+(ChatApp/) Tj
+T*
+(backend/) Tj
+T*
+(database/) Tj
+T*
+(schema.sql) Tj
+T*
+(migrations/) Tj
+T*
+(scripts/) Tj
+T*
+(archiveOldMessages.js) Tj
+T*
+(seedUsers.js) Tj
+T*
+(verifyRealtime.js) Tj
+T*
+(src/) Tj
+T*
+(app.js) Tj
+T*
+(config/) Tj
+T*
+(controllers/) Tj
+T*
+(database/) Tj
+T*
+(exceptions/) Tj
+T*
+(middleware/) Tj
+T*
+(models/) Tj
+T*
+(repository/) Tj
+T*
+(routes/) Tj
+T*
+(services/) Tj
+T*
+(socket/) Tj
+T*
+(utils/) Tj
+T*
+(tests/) Tj
+T*
+(server.js) Tj
+T*
+(frontend/) Tj
+T*
+(src/) Tj
+T*
+(components/) Tj
+T*
+(context/) Tj
+T*
+(navigation/) Tj
+T*
+(screens/) Tj
+T*
+(services/) Tj
+T*
+(styles/) Tj
+T*
+(utils/) Tj
+T*
+(App.js) Tj
+T*
+(app.json) Tj
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 1669 >>
+stream
+BT
+/F1 10 Tf
+50 760 Td
+14 TL
+(docker-compose.yml) Tj
+T*
+(package.json) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(Technology Stack) Tj
+T*
+() Tj
+T*
+(Frontend) Tj
+T*
+() Tj
+T*
+(- Expo React Native) Tj
+T*
+(- React 19) Tj
+T*
+(- React Native 0.86) Tj
+T*
+(- React Navigation bottom tabs and stack navigation) Tj
+T*
+(- Context API for auth, chat, socket, theme, localization, and notifications) Tj
+T*
+(- Axios for HTTP API requests) Tj
+T*
+(- Socket.io client for realtime messaging) Tj
+T*
+(- AsyncStorage for persisted local preferences/session data) Tj
+T*
+(- Expo Image Picker for avatar and message image uploads) Tj
+T*
+(- Expo Clipboard for copying messages) Tj
+T*
+(- Expo Blur for blurred overlays) Tj
+T*
+(- Expo Vector Icons for UI iconography) Tj
+T*
+() Tj
+T*
+(Backend) Tj
+T*
+() Tj
+T*
+(- Node.js) Tj
+T*
+(- Express.js) Tj
+T*
+(- Socket.io) Tj
+T*
+(- MySQL 8 with mysql2/promise) Tj
+T*
+(- Redis 7 for cache, presence, rate limiting, and temporary realtime state) Tj
+T*
+(- JWT access tokens and refresh tokens) Tj
+T*
+(- bcrypt password hashing) Tj
+T*
+(- multer for local file uploads) Tj
+T*
+(- express-validator for request validation) Tj
+T*
+(- express-rate-limit with Redis-aware application rate limiting) Tj
+T*
+(- Node built-in test runner) Tj
+T*
+() Tj
+T*
+(Infrastructure) Tj
+T*
+() Tj
+T*
+(- Docker Compose for MySQL, Redis, and phpMyAdmin) Tj
+T*
+(- MySQL initialized from backend/database/schema.sql) Tj
+T*
+(- Local uploads served from backend/uploads) Tj
+T*
+() Tj
+T*
+(Current Docker Services) Tj
+T*
+() Tj
+T*
+(docker-compose.yml currently starts infrastructure only:) Tj
+T*
+() Tj
+T*
+(- MySQL on host port 3307) Tj
+T*
+(- Redis on host port 6379) Tj
+T*
+(- phpMyAdmin on host port 8080) Tj
+ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 9 0 R >>
+endobj
+9 0 obj
+<< /Length 1204 >>
+stream
+BT
+/F1 10 Tf
+50 760 Td
+14 TL
+() Tj
+T*
+(The backend and frontend currently run from npm scripts during development.) Tj
+T*
+() Tj
+T*
+(Local Setup) Tj
+T*
+() Tj
+T*
+(1. Start Infrastructure) Tj
+T*
+() Tj
+T*
+(```bash) Tj
+T*
+(docker compose up -d) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(This starts MySQL, Redis, and phpMyAdmin.) Tj
+T*
+() Tj
+T*
+(2. Install Dependencies) Tj
+T*
+() Tj
+T*
+(From the project root:) Tj
+T*
+() Tj
+T*
+(```bash) Tj
+T*
+(npm install) Tj
+T*
+(cd backend && npm install) Tj
+T*
+(cd ../frontend && npm install) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(3. Configure Environment Files) Tj
+T*
+() Tj
+T*
+(Create backend env:) Tj
+T*
+() Tj
+T*
+(```bash) Tj
+T*
+(copy backend\\.env.example backend\\.env) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(Create frontend env:) Tj
+T*
+() Tj
+T*
+(```bash) Tj
+T*
+(copy frontend\\.env.example frontend\\.env) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(For Android emulator, localhost can usually work for Expo web/dev tooling, but Android) Tj
+T*
+(emulator API access often needs:) Tj
+T*
+() Tj
+T*
+(```text) Tj
+T*
+(EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:5000) Tj
+T*
+(EXPO_PUBLIC_SOCKET_IO_URL=http://10.0.2.2:5000) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(For a physical phone, use your computer LAN IP:) Tj
+T*
+() Tj
+T*
+(```text) Tj
+ET
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 11 0 R >>
+endobj
+11 0 obj
+<< /Length 990 >>
+stream
+BT
+/F1 10 Tf
+50 760 Td
+14 TL
+(EXPO_PUBLIC_API_BASE_URL=http://YOUR_LAN_IP:5000) Tj
+T*
+(EXPO_PUBLIC_SOCKET_IO_URL=http://YOUR_LAN_IP:5000) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(4. Generate Secrets) Tj
+T*
+() Tj
+T*
+(Update backend/.env with strong values:) Tj
+T*
+() Tj
+T*
+(```text) Tj
+T*
+(JWT_SECRET=your_long_random_secret) Tj
+T*
+(REFRESH_TOKEN_SECRET=your_other_long_random_secret) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(5. Run Backend) Tj
+T*
+() Tj
+T*
+(From the project root:) Tj
+T*
+() Tj
+T*
+(```bash) Tj
+T*
+(npm run backend:dev) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(Or from backend/:) Tj
+T*
+() Tj
+T*
+(```bash) Tj
+T*
+(npm run dev) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(6. Run Frontend) Tj
+T*
+() Tj
+T*
+(From the project root:) Tj
+T*
+() Tj
+T*
+(```bash) Tj
+T*
+(npm run frontend:start) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(Or from frontend/:) Tj
+T*
+() Tj
+T*
+(```bash) Tj
+T*
+(npm start) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(Android emulator:) Tj
+T*
+() Tj
+T*
+(```bash) Tj
+T*
+(npm run frontend:android) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(7. Open phpMyAdmin) Tj
+ET
+endstream
+endobj
+12 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 13 0 R >>
+endobj
+13 0 obj
+<< /Length 1409 >>
+stream
+BT
+/F1 10 Tf
+50 760 Td
+14 TL
+() Tj
+T*
+(Open:) Tj
+T*
+() Tj
+T*
+(```text) Tj
+T*
+(http://localhost:8080) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(Database:) Tj
+T*
+() Tj
+T*
+(```text) Tj
+T*
+(chat_app) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(Available Scripts) Tj
+T*
+() Tj
+T*
+(Root:) Tj
+T*
+() Tj
+T*
+(- npm run backend:dev starts the backend with nodemon.) Tj
+T*
+(- npm run backend:start starts the backend with Node.) Tj
+T*
+(- npm run frontend:start starts Expo.) Tj
+T*
+(- npm run frontend:android starts Expo for Android.) Tj
+T*
+(- npm run frontend:ios starts Expo for iOS.) Tj
+T*
+(- npm run frontend:web starts Expo web.) Tj
+T*
+() Tj
+T*
+(Backend:) Tj
+T*
+() Tj
+T*
+(- npm run dev starts the API in development mode.) Tj
+T*
+(- npm start starts the API in production-like mode.) Tj
+T*
+(- npm test runs backend tests with Node test runner.) Tj
+T*
+(- npm run seed:users inserts 10 demo users.) Tj
+T*
+(- npm run archive:messages archives old messages into the partitioned archive table.) Tj
+T*
+() Tj
+T*
+(Frontend:) Tj
+T*
+() Tj
+T*
+(- npm start starts Expo.) Tj
+T*
+(- npm run android starts Android target.) Tj
+T*
+(- npm run ios starts iOS target.) Tj
+T*
+(- npm run web starts web target.) Tj
+T*
+() Tj
+T*
+(Demo Seed Users) Tj
+T*
+() Tj
+T*
+(The backend includes backend/scripts/seedUsers.js, which inserts 10 demo users with random) Tj
+T*
+(human-readable names and test emails.) Tj
+T*
+() Tj
+T*
+(Run:) Tj
+T*
+() Tj
+T*
+(```bash) Tj
+T*
+(cd backend) Tj
+ET
+endstream
+endobj
+14 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 15 0 R >>
+endobj
+15 0 obj
+<< /Length 2068 >>
+stream
+BT
+/F1 10 Tf
+50 760 Td
+14 TL
+(npm run seed:users) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(Default seeded password:) Tj
+T*
+() Tj
+T*
+(```text) Tj
+T*
+(Password@123) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(The script is idempotent by email, so running it again skips existing users.) Tj
+T*
+() Tj
+T*
+(Backend Architecture) Tj
+T*
+() Tj
+T*
+(The backend follows an enterprise-style layered architecture:) Tj
+T*
+() Tj
+T*
+(- Routes define HTTP endpoints and validators.) Tj
+T*
+(- Controllers handle request/response orchestration.) Tj
+T*
+(- Services contain business logic and transaction flow.) Tj
+T*
+(- Repositories contain database access logic.) Tj
+T*
+(- Models/entities normalize response shapes.) Tj
+T*
+(- Middleware handles auth, validation, logging, rate limiting, sanitization, file uploads,) Tj
+T*
+(and errors.) Tj
+T*
+(- Socket handlers/managers handle realtime events and room membership.) Tj
+T*
+(- Utilities centralize tokens, responses, logging, and encryption helpers.) Tj
+T*
+(- Exceptions standardize API error behavior.) Tj
+T*
+() Tj
+T*
+(Core Backend Flow) Tj
+T*
+() Tj
+T*
+(1. server.js loads env variables, creates the Express app, creates the HTTP server, attaches) Tj
+T*
+(Socket.io, then starts listening.) Tj
+T*
+(2. src/app.js builds the database adapter, repositories, services, controllers, middleware,) Tj
+T*
+(and routes.) Tj
+T*
+(3. A client request enters Express through CORS, JSON parsing, logging, sanitization, and) Tj
+T*
+(rate limiting.) Tj
+T*
+(4. Protected routes use JWT auth middleware.) Tj
+T*
+(5. Route validators check payload shape.) Tj
+T*
+(6. Controllers call service methods.) Tj
+T*
+(7. Services validate business rules and call repositories.) Tj
+T*
+(8. Repositories execute MySQL queries through the database adapter.) Tj
+T*
+(9. Services emit realtime socket events when persisted state changes.) Tj
+T*
+(10. Controllers return standardized success/error response envelopes.) Tj
+T*
+(11. Errors pass through centralized error handling.) Tj
+T*
+() Tj
+T*
+(Database Abstraction) Tj
+T*
+() Tj
+T*
+(Database access is isolated behind:) Tj
+T*
+() Tj
+T*
+(- DatabaseAdapter) Tj
+ET
+endstream
+endobj
+16 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 17 0 R >>
+endobj
+17 0 obj
+<< /Length 2018 >>
+stream
+BT
+/F1 10 Tf
+50 760 Td
+14 TL
+(- MySqlDatabaseAdapter) Tj
+T*
+(- repository classes) Tj
+T*
+() Tj
+T*
+(This keeps raw SQL away from controllers and most services, making future database migration) Tj
+T*
+(easier. Business logic depends on repository methods instead of direct database calls.) Tj
+T*
+() Tj
+T*
+(Base Classes) Tj
+T*
+() Tj
+T*
+(The backend includes reusable base classes:) Tj
+T*
+() Tj
+T*
+(- BaseRepository for generic CRUD operations.) Tj
+T*
+(- BaseService for shared service behavior.) Tj
+T*
+(- BaseController for controller helpers and async handling.) Tj
+T*
+() Tj
+T*
+(Concrete repositories/services/controllers extend these patterns for application-specific) Tj
+T*
+(behavior.) Tj
+T*
+() Tj
+T*
+(Backend Packages) Tj
+T*
+() Tj
+T*
+(- bcryptjs: password hashing.) Tj
+T*
+(- cors: CORS middleware.) Tj
+T*
+(- dotenv: env file loading.) Tj
+T*
+(- express: HTTP API framework.) Tj
+T*
+(- express-rate-limit: rate limiting.) Tj
+T*
+(- express-validator: request validation.) Tj
+T*
+(- jsonwebtoken: JWT access/refresh tokens.) Tj
+T*
+(- multer: multipart image uploads.) Tj
+T*
+(- mysql2: MySQL promise client.) Tj
+T*
+(- redis: Redis client.) Tj
+T*
+(- socket.io: realtime server.) Tj
+T*
+(- nodemon: development auto-restart.) Tj
+T*
+() Tj
+T*
+(Frontend Architecture) Tj
+T*
+() Tj
+T*
+(The frontend is organized around reusable components, screens, navigation, service clients,) Tj
+T*
+(and context providers.) Tj
+T*
+() Tj
+T*
+(Frontend Flow) Tj
+T*
+() Tj
+T*
+(1. App.js loads providers.) Tj
+T*
+(2. RootNavigator decides whether to show auth or app navigation.) Tj
+T*
+(3. Auth screens call authApi.) Tj
+T*
+(4. Tokens/session data are stored through AuthContext.) Tj
+T*
+(5. App screens use ChatContext for conversations, messages, users, and optimistic updates.) Tj
+T*
+(6. Socket connection is managed through the socket service/context.) Tj
+T*
+(7. Incoming socket events update chat state and show toast notifications when appropriate.) Tj
+T*
+(8. Theme and language changes are stored locally and applied across screens.) Tj
+T*
+() Tj
+ET
+endstream
+endobj
+18 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 19 0 R >>
+endobj
+19 0 obj
+<< /Length 1827 >>
+stream
+BT
+/F1 10 Tf
+50 760 Td
+14 TL
+(Frontend Packages) Tj
+T*
+() Tj
+T*
+(- @expo/vector-icons: Ionicons and FontAwesome icons.) Tj
+T*
+(- @react-native-async-storage/async-storage: local session/preferences storage.) Tj
+T*
+(- @react-navigation/bottom-tabs: bottom tab navigator.) Tj
+T*
+(- @react-navigation/native: navigation foundation.) Tj
+T*
+(- @react-navigation/stack: stack navigation and transitions.) Tj
+T*
+(- axios: backend API client.) Tj
+T*
+(- babel-preset-expo: Expo Babel setup.) Tj
+T*
+(- expo: Expo runtime.) Tj
+T*
+(- expo-blur: blur overlays.) Tj
+T*
+(- expo-clipboard: copy message text/image URL.) Tj
+T*
+(- expo-image-picker: avatar/group/message image selection.) Tj
+T*
+(- expo-status-bar: status bar integration.) Tj
+T*
+(- react, react-native: mobile UI framework.) Tj
+T*
+(- react-native-gesture-handler: gestures/navigation support.) Tj
+T*
+(- react-native-safe-area-context: safe-area handling.) Tj
+T*
+(- react-native-screens: native navigation screens.) Tj
+T*
+(- socket.io-client: realtime client.) Tj
+T*
+() Tj
+T*
+(Main Features) Tj
+T*
+() Tj
+T*
+(Authentication) Tj
+T*
+() Tj
+T*
+(- Register) Tj
+T*
+(- Login) Tj
+T*
+(- Refresh token flow) Tj
+T*
+(- Logout) Tj
+T*
+(- JWT verification) Tj
+T*
+(- Password hashing with bcrypt) Tj
+T*
+(- Styled login/register/password reset screens) Tj
+T*
+(- Social login buttons as UI placeholders) Tj
+T*
+(- Show/hide password icon) Tj
+T*
+() Tj
+T*
+(Conversations) Tj
+T*
+() Tj
+T*
+(- Direct one-to-one conversations) Tj
+T*
+(- Group conversations) Tj
+T*
+(- Conversation list) Tj
+T*
+(- Group list tab) Tj
+T*
+(- People tab) Tj
+T*
+(- Search screen) Tj
+T*
+(- User search screen) Tj
+T*
+(- Archive, mute, pin, delete, leave conversation) Tj
+T*
+(- Pinned conversations appear at the top) Tj
+T*
+(- Muted conversations show mute badge) Tj
+T*
+(- Group owner role support) Tj
+T*
+(- Group profile page) Tj
+ET
+endstream
+endobj
+20 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 21 0 R >>
+endobj
+21 0 obj
+<< /Length 1457 >>
+stream
+BT
+/F1 10 Tf
+50 760 Td
+14 TL
+(- Group avatar and title update for owner) Tj
+T*
+(- Add/kick group members for owner) Tj
+T*
+() Tj
+T*
+(Messaging) Tj
+T*
+() Tj
+T*
+(- Text messages) Tj
+T*
+(- Image messages from device gallery) Tj
+T*
+(- Fullscreen image viewer) Tj
+T*
+(- Optimistic message sending) Tj
+T*
+(- Pending/failed/retry state support) Tj
+T*
+(- Delivered/read state support) Tj
+T*
+(- Read receipts) Tj
+T*
+(- Unread counts) Tj
+T*
+(- Cursor-based history loading) Tj
+T*
+(- Load older messages) Tj
+T*
+(- Message edit) Tj
+T*
+(- Message delete) Tj
+T*
+(- Message copy) Tj
+T*
+(- Reply to message) Tj
+T*
+(- Forward message) Tj
+T*
+(- Multi-select forwarding to multiple users/conversations) Tj
+T*
+(- Message search) Tj
+T*
+() Tj
+T*
+(Realtime) Tj
+T*
+() Tj
+T*
+(- Socket.io connection after authentication) Tj
+T*
+(- User rooms) Tj
+T*
+(- Conversation rooms) Tj
+T*
+(- Online/offline presence) Tj
+T*
+(- Active now indicator) Tj
+T*
+(- Animated online green dot) Tj
+T*
+(- Offline dot style) Tj
+T*
+(- Typing indicator) Tj
+T*
+(- Message received events) Tj
+T*
+(- Message edited/deleted events) Tj
+T*
+(- Delivered/read events) Tj
+T*
+(- Realtime toast notifications) Tj
+T*
+() Tj
+T*
+(Attachments) Tj
+T*
+() Tj
+T*
+(- Avatar upload) Tj
+T*
+(- Group avatar upload) Tj
+T*
+(- Chat image upload) Tj
+T*
+(- Local upload storage through backend) Tj
+T*
+(- Uploaded files served from /uploads) Tj
+T*
+(- Attachment metadata stored separately from messages) Tj
+T*
+() Tj
+T*
+(Notifications) Tj
+ET
+endstream
+endobj
+22 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 23 0 R >>
+endobj
+23 0 obj
+<< /Length 1414 >>
+stream
+BT
+/F1 10 Tf
+50 760 Td
+14 TL
+() Tj
+T*
+(- Toast notification system) Tj
+T*
+(- Draggable/dismissible toast behavior) Tj
+T*
+(- Message notification toast with avatar, name, time, and preview) Tj
+T*
+(- Notification settings page) Tj
+T*
+(- Mute all notifications) Tj
+T*
+(- Per-user notification mute) Tj
+T*
+(- Device token table prepared for future push notifications) Tj
+T*
+() Tj
+T*
+(UI/UX) Tj
+T*
+() Tj
+T*
+(- Mobile-first chat UI inspired by Messenger/Telegram patterns) Tj
+T*
+(- Custom bottom tab navigator) Tj
+T*
+(- Smooth active tab indicator) Tj
+T*
+(- Floating/glass-style tab bar) Tj
+T*
+(- Chat list MyDay/story row) Tj
+T*
+(- Collapsible MyDay behavior) Tj
+T*
+(- Keyboard-aware chat composer) Tj
+T*
+(- Long-press action sheets for messages and conversations) Tj
+T*
+(- Reusable confirmation modal) Tj
+T*
+(- Dedicated language selection page) Tj
+T*
+(- English and Myanmar localization) Tj
+T*
+(- UK/Myanmar flag icons) Tj
+T*
+(- Dark/light mode) Tj
+T*
+(- Reusable animated switch component) Tj
+T*
+() Tj
+T*
+(API Overview) Tj
+T*
+() Tj
+T*
+(Base API prefix:) Tj
+T*
+() Tj
+T*
+(```text) Tj
+T*
+(/api/v1) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(Auth:) Tj
+T*
+() Tj
+T*
+(- POST /auth/register) Tj
+T*
+(- POST /auth/login) Tj
+T*
+(- POST /auth/refresh) Tj
+T*
+(- POST /auth/logout) Tj
+T*
+(- GET /auth/verify) Tj
+T*
+() Tj
+T*
+(Users:) Tj
+T*
+() Tj
+T*
+(- User profile read/update) Tj
+T*
+(- Avatar upload) Tj
+T*
+(- User listing/search) Tj
+T*
+() Tj
+ET
+endstream
+endobj
+24 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 25 0 R >>
+endobj
+25 0 obj
+<< /Length 1799 >>
+stream
+BT
+/F1 10 Tf
+50 760 Td
+14 TL
+(Conversations:) Tj
+T*
+() Tj
+T*
+(- GET /conversations) Tj
+T*
+(- POST /conversations/direct) Tj
+T*
+(- POST /conversations/group) Tj
+T*
+(- PATCH /conversations/:conversationId/preferences) Tj
+T*
+(- POST /conversations/:conversationId/leave) Tj
+T*
+(- PATCH /conversations/:conversationId/group) Tj
+T*
+(- POST /conversations/:conversationId/group/avatar) Tj
+T*
+(- POST /conversations/:conversationId/members) Tj
+T*
+(- DELETE /conversations/:conversationId/members/:memberId) Tj
+T*
+() Tj
+T*
+(Messages:) Tj
+T*
+() Tj
+T*
+(- GET /messages/search) Tj
+T*
+(- GET /messages/conversation/:conversationId) Tj
+T*
+(- POST /messages) Tj
+T*
+(- POST /messages/image) Tj
+T*
+(- POST /messages/:id/forward) Tj
+T*
+(- PATCH /messages/:id) Tj
+T*
+(- DELETE /messages/:id) Tj
+T*
+(- POST /messages/conversation/:conversationId/delivered) Tj
+T*
+(- POST /messages/conversation/:conversationId/read) Tj
+T*
+() Tj
+T*
+(Socket.io Overview) Tj
+T*
+() Tj
+T*
+(Socket authentication uses the same JWT identity as the REST API. The socket layer keeps) Tj
+T*
+(users in stable user rooms and conversation rooms.) Tj
+T*
+() Tj
+T*
+(Realtime responsibilities:) Tj
+T*
+() Tj
+T*
+(- Register active socket connections.) Tj
+T*
+(- Join user-specific room.) Tj
+T*
+(- Join conversation rooms.) Tj
+T*
+(- Broadcast message-created events.) Tj
+T*
+(- Broadcast message-edited/deleted events.) Tj
+T*
+(- Broadcast delivered/read receipt events.) Tj
+T*
+(- Broadcast typing events.) Tj
+T*
+(- Broadcast online/offline presence changes.) Tj
+T*
+() Tj
+T*
+(Socket manager classes:) Tj
+T*
+() Tj
+T*
+(- ConnectionManager tracks active socket sessions.) Tj
+T*
+(- RoomManager builds and manages stable room names.) Tj
+T*
+(- Message, presence, and user handlers keep socket event logic separated.) Tj
+T*
+() Tj
+T*
+(Database Design) Tj
+T*
+() Tj
+ET
+endstream
+endobj
+26 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 27 0 R >>
+endobj
+27 0 obj
+<< /Length 2040 >>
+stream
+BT
+/F1 10 Tf
+50 760 Td
+14 TL
+(The canonical database schema is:) Tj
+T*
+() Tj
+T*
+(```text) Tj
+T*
+(backend/database/schema.sql) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(Main tables:) Tj
+T*
+() Tj
+T*
+(- users: registered users, profile avatar, status, last seen.) Tj
+T*
+(- conversations: direct/group conversation records.) Tj
+T*
+(- conversation_members: membership, role, archive/mute/pin/delete state, last read cursor.) Tj
+T*
+(- messages: hot/active messages.) Tj
+T*
+(- message_receipts: delivered/read state per user.) Tj
+T*
+(- attachments: uploaded message file metadata.) Tj
+T*
+(- messages_archive: partitioned archive table for old messages.) Tj
+T*
+(- device_tokens: future push notification device registration.) Tj
+T*
+() Tj
+T*
+(Important Database Strategies) Tj
+T*
+() Tj
+T*
+(- Conversations and members are separate tables, instead of deriving conversations only from) Tj
+T*
+(messages.) Tj
+T*
+(- Group read state is per user through message_receipts and) Tj
+T*
+(conversation_members.last_read_message_id.) Tj
+T*
+(- Messages use client_message_id for idempotent sends and retry safety.) Tj
+T*
+(- Recent/hot messages stay in messages.) Tj
+T*
+(- Old messages can be moved to messages_archive.) Tj
+T*
+(- Archive table is partitioned by time range.) Tj
+T*
+(- Frequently queried fields have indexes for cursor pagination, lookup, and membership) Tj
+T*
+(checks.) Tj
+T*
+() Tj
+T*
+(Indexing Strategy) Tj
+T*
+() Tj
+T*
+(Important indexes include:) Tj
+T*
+() Tj
+T*
+(- users.username and users.email unique indexes.) Tj
+T*
+(- conversation_members\(user_id\).) Tj
+T*
+(- conversation_members\(conversation_id\).) Tj
+T*
+(- messages\(conversation_id, message_id\) for cursor pagination.) Tj
+T*
+(- messages\(sender_id\).) Tj
+T*
+(- messages\(receiver_id\).) Tj
+T*
+(- messages\(reply_to_message_id\).) Tj
+T*
+(- messages\(forwarded_from_message_id\).) Tj
+T*
+(- message_receipts\(conversation_id, user_id\).) Tj
+T*
+(- device_tokens\(user_id, is_active\).) Tj
+T*
+(- Archive indexes for conversation cursor and created time.) Tj
+T*
+() Tj
+T*
+(Message Lifecycle) Tj
+T*
+() Tj
+ET
+endstream
+endobj
+28 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 29 0 R >>
+endobj
+29 0 obj
+<< /Length 1820 >>
+stream
+BT
+/F1 10 Tf
+50 760 Td
+14 TL
+(Sending a Message) Tj
+T*
+() Tj
+T*
+(1. User writes a message in the React Native composer.) Tj
+T*
+(2. Frontend creates a clientMessageId.) Tj
+T*
+(3. UI adds an optimistic pending message.) Tj
+T*
+(4. Frontend sends REST request to backend.) Tj
+T*
+(5. Backend validates auth, payload, conversation membership, and business rules.) Tj
+T*
+(6. Backend stores the message in MySQL.) Tj
+T*
+(7. Backend creates receipt rows for conversation members.) Tj
+T*
+(8. Backend updates conversation last_message_id.) Tj
+T*
+(9. Backend invalidates affected Redis caches.) Tj
+T*
+(10. Backend emits Socket.io events.) Tj
+T*
+(11. Frontend replaces optimistic message with persisted message.) Tj
+T*
+() Tj
+T*
+(Reading a Conversation) Tj
+T*
+() Tj
+T*
+(1. Chat screen requests recent messages.) Tj
+T*
+(2. Backend checks recent message cache when eligible.) Tj
+T*
+(3. Backend loads messages from MySQL if cache misses.) Tj
+T*
+(4. Backend batch-loads receipts and attachments to avoid N+1 queries.) Tj
+T*
+(5. Backend returns cursor-based page.) Tj
+T*
+(6. Frontend marks conversation delivered/read when appropriate.) Tj
+T*
+(7. Backend updates read state only if there is an actual state change.) Tj
+T*
+() Tj
+T*
+(Replying) Tj
+T*
+() Tj
+T*
+(Reply metadata is stored in:) Tj
+T*
+() Tj
+T*
+(```text) Tj
+T*
+(messages.reply_to_message_id) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(The backend validates that the replied message belongs to the same conversation.) Tj
+T*
+() Tj
+T*
+(Forwarding) Tj
+T*
+() Tj
+T*
+(Forward metadata is stored in:) Tj
+T*
+() Tj
+T*
+(```text) Tj
+T*
+(messages.forwarded_from_message_id) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(The frontend supports selecting multiple forward targets and sends a forward request for) Tj
+T*
+(each selected conversation/user.) Tj
+T*
+() Tj
+T*
+(Redis and Caching) Tj
+T*
+() Tj
+T*
+(Redis is used for:) Tj
+ET
+endstream
+endobj
+30 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 31 0 R >>
+endobj
+31 0 obj
+<< /Length 1644 >>
+stream
+BT
+/F1 10 Tf
+50 760 Td
+14 TL
+() Tj
+T*
+(- Recent message cache) Tj
+T*
+(- Conversation list cache) Tj
+T*
+(- User profile/status cache) Tj
+T*
+(- Presence state) Tj
+T*
+(- Rate limiting support) Tj
+T*
+(- Temporary realtime state patterns) Tj
+T*
+() Tj
+T*
+(Recent messages are cached by conversation and limit. Cache TTL is configurable through:) Tj
+T*
+() Tj
+T*
+(```text) Tj
+T*
+(RECENT_MESSAGES_CACHE_TTL) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(Default recent message cache:) Tj
+T*
+() Tj
+T*
+(```text) Tj
+T*
+(30 messages) Tj
+T*
+(60 seconds) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(Read/delivered invalidation is optimized to avoid clearing caches when nothing actually) Tj
+T*
+(changed.) Tj
+T*
+() Tj
+T*
+(If Redis is unavailable, the backend has an in-memory fallback for development behavior.) Tj
+T*
+() Tj
+T*
+(Message Scalability Strategy) Tj
+T*
+() Tj
+T*
+(The app uses a hot-table plus archive-table strategy:) Tj
+T*
+() Tj
+T*
+(- messages stores active/recent messages.) Tj
+T*
+(- messages_archive stores old messages with receipt/attachment JSON snapshots.) Tj
+T*
+(- Archive table is partitioned by month.) Tj
+T*
+(- archiveOldMessages.js moves old messages in batches.) Tj
+T*
+(- Message listing can read across hot and archived storage.) Tj
+T*
+() Tj
+T*
+(This keeps recent chat access fast while still preserving old history.) Tj
+T*
+() Tj
+T*
+(Security) Tj
+T*
+() Tj
+T*
+(Current security measures:) Tj
+T*
+() Tj
+T*
+(- Passwords hashed with bcrypt.) Tj
+T*
+(- JWT access tokens for API/socket authentication.) Tj
+T*
+(- Refresh token flow.) Tj
+T*
+(- Auth middleware on protected routes.) Tj
+T*
+(- Request validation with express-validator.) Tj
+T*
+(- Centralized error handling.) Tj
+ET
+endstream
+endobj
+32 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 33 0 R >>
+endobj
+33 0 obj
+<< /Length 2245 >>
+stream
+BT
+/F1 10 Tf
+50 760 Td
+14 TL
+(- CORS configuration.) Tj
+T*
+(- Request sanitization middleware.) Tj
+T*
+(- Rate limiting.) Tj
+T*
+(- Authorization checks for profile updates and conversation/group membership.) Tj
+T*
+(- Group owner-only controls for sensitive group actions.) Tj
+T*
+(- Upload middleware separates avatar, group avatar, and message image upload paths.) Tj
+T*
+() Tj
+T*
+(Recommended production hardening:) Tj
+T*
+() Tj
+T*
+(- Store secrets in a real secret manager.) Tj
+T*
+(- Use HTTPS everywhere.) Tj
+T*
+(- Lock CORS to trusted origins.) Tj
+T*
+(- Add refresh token rotation/persistence.) Tj
+T*
+(- Move uploads to object storage such as S3/R2/GCS.) Tj
+T*
+(- Add antivirus/file scanning for uploads.) Tj
+T*
+(- Add audit logs for admin/group owner actions.) Tj
+T*
+(- Add database backups and restore testing.) Tj
+T*
+(- Add structured application monitoring.) Tj
+T*
+() Tj
+T*
+(Performance) Tj
+T*
+() Tj
+T*
+(Implemented performance strategies:) Tj
+T*
+() Tj
+T*
+(- Redis cache for frequently accessed recent messages.) Tj
+T*
+(- Cursor-based pagination instead of page numbers.) Tj
+T*
+(- Batch loading of receipts and attachments to avoid N+1 queries.) Tj
+T*
+(- Indexed database access paths.) Tj
+T*
+(- Conversation cache invalidation only when needed.) Tj
+T*
+(- Read/delivered state updates skip unnecessary writes.) Tj
+T*
+(- Hot/archive message split for large message volume.) Tj
+T*
+(- Optimistic frontend updates for perceived speed.) Tj
+T*
+() Tj
+T*
+(Future performance improvements:) Tj
+T*
+() Tj
+T*
+(- Direct-to-object-storage uploads with signed URLs.) Tj
+T*
+(- CDN for attachments and avatars.) Tj
+T*
+(- Redis adapter for Socket.io horizontal scaling.) Tj
+T*
+(- Read replicas for heavy read traffic.) Tj
+T*
+(- Background workers for notification fanout and media processing.) Tj
+T*
+(- Search engine integration for large-scale message search.) Tj
+T*
+() Tj
+T*
+(Business Logic Highlights) Tj
+T*
+() Tj
+T*
+(- A direct conversation is reused instead of creating duplicates.) Tj
+T*
+(- Group conversations require a title and at least one selected member.) Tj
+T*
+(- Group creators are stored as owners.) Tj
+T*
+(- Owners can edit group profile and manage members.) Tj
+T*
+(- Users can pin/mute/archive/delete conversations per membership row.) Tj
+ET
+endstream
+endobj
+34 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 35 0 R >>
+endobj
+35 0 obj
+<< /Length 1458 >>
+stream
+BT
+/F1 10 Tf
+50 760 Td
+14 TL
+(- Message retry uses clientMessageId to avoid duplicate persisted messages.) Tj
+T*
+(- A successful socket emit is not treated as durable persistence; messages are saved first,) Tj
+T*
+(then emitted.) Tj
+T*
+(- Read state is tracked per user, which supports group chat correctness.) Tj
+T*
+(- Notifications respect mute settings on the frontend.) Tj
+T*
+() Tj
+T*
+(Localization) Tj
+T*
+() Tj
+T*
+(The app supports:) Tj
+T*
+() Tj
+T*
+(- English) Tj
+T*
+(- Myanmar) Tj
+T*
+() Tj
+T*
+(Static UI text is localized through LocalizationContext. Dynamic user content such as) Tj
+T*
+(usernames, messages, group names, and emails is not translated.) Tj
+T*
+() Tj
+T*
+(Theme System) Tj
+T*
+() Tj
+T*
+(The app supports:) Tj
+T*
+() Tj
+T*
+(- Light mode) Tj
+T*
+(- Dark mode) Tj
+T*
+() Tj
+T*
+(Theme state is stored locally and applied through ThemeContext. Shared colors live in) Tj
+T*
+(frontend/src/styles/colors.js.) Tj
+T*
+() Tj
+T*
+(Testing) Tj
+T*
+() Tj
+T*
+(Run backend tests:) Tj
+T*
+() Tj
+T*
+(```bash) Tj
+T*
+(cd backend) Tj
+T*
+(npm test) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(Covered backend areas include:) Tj
+T*
+() Tj
+T*
+(- Auth registration/login behavior) Tj
+T*
+(- Message sending) Tj
+T*
+(- Reply metadata validation) Tj
+T*
+(- Forward message behavior) Tj
+T*
+(- Read-state optimization) Tj
+T*
+(- Archived message serialization) Tj
+T*
+(- Batch-loading message relations) Tj
+T*
+(- Socket room and connection managers) Tj
+T*
+() Tj
+T*
+(Development Notes) Tj
+T*
+() Tj
+ET
+endstream
+endobj
+36 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 37 0 R >>
+endobj
+37 0 obj
+<< /Length 1331 >>
+stream
+BT
+/F1 10 Tf
+50 760 Td
+14 TL
+(Backend Port Already In Use) Tj
+T*
+() Tj
+T*
+(If port 5000 is already used, stop the old backend process or change PORT in backend/.env.) Tj
+T*
+() Tj
+T*
+(Metro Cache Issues) Tj
+T*
+() Tj
+T*
+(If Expo behaves strangely after package changes:) Tj
+T*
+() Tj
+T*
+(```bash) Tj
+T*
+(cd frontend) Tj
+T*
+(npm start -- --clear) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(Android Emulator Networking) Tj
+T*
+() Tj
+T*
+(If the emulator cannot reach the backend, set frontend env URLs to:) Tj
+T*
+() Tj
+T*
+(```text) Tj
+T*
+(http://10.0.2.2:5000) Tj
+T*
+(```) Tj
+T*
+() Tj
+T*
+(Physical Phone Networking) Tj
+T*
+() Tj
+T*
+(Use your computer LAN IP and make sure phone and computer are on the same network.) Tj
+T*
+() Tj
+T*
+(Current Limitations) Tj
+T*
+() Tj
+T*
+(- Push notification provider integration is prepared but not fully connected to FCM/APNs) Tj
+T*
+(yet.) Tj
+T*
+(- Large file uploads currently go through Node/local storage; production should use object) Tj
+T*
+(storage and signed URLs.) Tj
+T*
+(- Social login buttons are UI placeholders.) Tj
+T*
+(- MyDay/story publishing is a placeholder for future 24-hour status support.) Tj
+T*
+(- End-to-end encryption is not implemented.) Tj
+T*
+() Tj
+T*
+(License) Tj
+T*
+() Tj
+T*
+(This project is currently private/internal. Add a license before publishing publicly if) Tj
+T*
+(needed.) Tj
+T*
+() Tj
+ET
+endstream
+endobj
+xref
+0 38
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000226 00000 n 
+0000000296 00000 n 
+0000000422 00000 n 
+0000001758 00000 n 
+0000001884 00000 n 
+0000003605 00000 n 
+0000003731 00000 n 
+0000004987 00000 n 
+0000005115 00000 n 
+0000006157 00000 n 
+0000006285 00000 n 
+0000007747 00000 n 
+0000007875 00000 n 
+0000009996 00000 n 
+0000010124 00000 n 
+0000012195 00000 n 
+0000012323 00000 n 
+0000014203 00000 n 
+0000014331 00000 n 
+0000015841 00000 n 
+0000015969 00000 n 
+0000017436 00000 n 
+0000017564 00000 n 
+0000019416 00000 n 
+0000019544 00000 n 
+0000021637 00000 n 
+0000021765 00000 n 
+0000023638 00000 n 
+0000023766 00000 n 
+0000025463 00000 n 
+0000025591 00000 n 
+0000027889 00000 n 
+0000028017 00000 n 
+0000029528 00000 n 
+0000029656 00000 n 
+trailer
+<< /Size 38 /Root 1 0 R >>
+startxref
+31040
+%%EOF

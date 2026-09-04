@@ -50,13 +50,6 @@ export default function ChatListScreen({ navigation }) {
     [conversations],
   );
 
-  const usersWithoutConversation = useMemo(() => {
-    const usedIds = new Set(
-      directConversations.map((item) => item.otherUser?.userId),
-    );
-    return users.filter((item) => !usedIds.has(item.userId));
-  }, [users, directConversations]);
-
   const storyUsers = useMemo(() => users.slice(0, 8), [users]);
   const collapsedStoryUsers = useMemo(() => users.slice(0, 2), [users]);
   const storyHeight = scrollY.interpolate({
@@ -446,44 +439,6 @@ export default function ChatListScreen({ navigation }) {
             </View>
           )}
         </View>
-
-        {usersWithoutConversation.length ? (
-          <View
-            style={{
-              marginTop: 18,
-              padding: 16,
-              borderRadius: 24,
-              backgroundColor: colors.cardGlass,
-            }}
-          >
-            <Text style={{ fontWeight: "700", color: colors.text }}>
-              {t("chatListStartNewChat")}
-            </Text>
-            {usersWithoutConversation.map((item) => (
-              <Pressable
-                key={item.userId}
-                onPress={() => handleOpenConversation(item)}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginTop: 14,
-                }}
-              >
-                <UserAvatar user={item} size={48} />
-                <View style={{ marginLeft: 12, flex: 1 }}>
-                  <Text style={{ color: colors.text, fontWeight: "700" }}>
-                    {item.username}
-                  </Text>
-                  <Text style={{ marginTop: 4, color: colors.subtext }}>
-                    {item.status === "online"
-                      ? t("commonActiveNow")
-                      : t("commonOffline")}
-                  </Text>
-                </View>
-              </Pressable>
-            ))}
-          </View>
-        ) : null}
 
         <Modal
           visible={Boolean(selectedConversation)}

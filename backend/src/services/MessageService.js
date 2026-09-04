@@ -84,9 +84,39 @@ class MessageService extends BaseService {
     return messageRow;
   }
 
-  formatSerializedMessage(row, receiptRows = [], attachmentRows = []) {
+  buildMessageReferencePreview(row) {
+    if (!row) {
+      return null;
+    }
+
     return {
-      ...this.serialize(row),
+      messageId: row.message_id,
+      conversationId: row.conversation_id,
+      senderId: row.sender_id,
+      content: row.content,
+      messageType: row.message_type,
+      createdAt: row.created_at,
+    };
+  }
+
+  formatSerializedMessage(
+    row,
+    receiptRows = [],
+    attachmentRows = [],
+    referenceMessagesById = new Map(),
+  ) {
+    const serialized = this.serialize(row);
+    const repliedMessage = this.buildMessageReferencePreview(
+      referenceMessagesById.get(row.reply_to_message_id),
+    );
+    const forwardedFromMessage = this.buildMessageReferencePreview(
+      referenceMessagesById.get(row.forwarded_from_message_id),
+    );
+
+    return {
+      ...serialized,
+      repliedMessage,
+      forwardedFromMessage,
       isRead:
         row.delivery_state === "read" ||
         receiptRows.some((receipt) => Boolean(receipt.read_at)),
@@ -114,12 +144,25 @@ class MessageService extends BaseService {
       return this.formatSerializedMessage(row, receiptRows, attachmentRows);
     }
 
-    const [receiptRows, attachmentRows] = await Promise.all([
+    const referenceIds = [
+      row.reply_to_message_id,
+      row.forwarded_from_message_id,
+    ].filter(Boolean);
+    const [receiptRows, attachmentRows, referenceRows] = await Promise.all([
       this.messageReceiptRepository.listByMessageId(row.message_id),
       this.attachmentRepository.listByMessageId(row.message_id),
+      this.messageRepository.findByIds(referenceIds),
     ]);
+    const referenceMessagesById = new Map(
+      referenceRows.map((reference) => [reference.message_id, reference]),
+    );
 
-    return this.formatSerializedMessage(row, receiptRows, attachmentRows);
+    return this.formatSerializedMessage(
+      row,
+      receiptRows,
+      attachmentRows,
+      referenceMessagesById,
+    );
   }
 
   groupRowsByMessageId(rows = []) {
@@ -134,12 +177,26 @@ class MessageService extends BaseService {
   async serializeMessages(rows = []) {
     const hotRows = rows.filter((row) => !row.is_archived);
     const hotMessageIds = hotRows.map((row) => row.message_id);
-    const [receiptRows, attachmentRows] = await Promise.all([
+    const referenceIds = [
+      ...new Set(
+        rows
+          .flatMap((row) => [
+            row.reply_to_message_id,
+            row.forwarded_from_message_id,
+          ])
+          .filter(Boolean),
+      ),
+    ];
+    const [receiptRows, attachmentRows, referenceRows] = await Promise.all([
       this.messageReceiptRepository.listByMessageIds(hotMessageIds),
       this.attachmentRepository.listByMessageIds(hotMessageIds),
+      this.messageRepository.findByIds(referenceIds),
     ]);
     const receiptsByMessageId = this.groupRowsByMessageId(receiptRows);
     const attachmentsByMessageId = this.groupRowsByMessageId(attachmentRows);
+    const referenceMessagesById = new Map(
+      referenceRows.map((reference) => [reference.message_id, reference]),
+    );
 
     return rows.map((row) => {
       if (row.is_archived) {
@@ -147,6 +204,7 @@ class MessageService extends BaseService {
           row,
           parseJsonArray(row.receipts_json),
           parseJsonArray(row.attachments_json),
+          referenceMessagesById,
         );
       }
 
@@ -154,6 +212,7 @@ class MessageService extends BaseService {
         row,
         receiptsByMessageId.get(row.message_id) || [],
         attachmentsByMessageId.get(row.message_id) || [],
+        referenceMessagesById,
       );
     });
   }
@@ -246,6 +305,8 @@ class MessageService extends BaseService {
     messageType = "text",
     clientMessageId = null,
     attachment = null,
+    replyToMessageId = null,
+    forwardedFromMessageId = null,
   }) {
     const stableClientMessageId =
       clientMessageId || buildClientMessageId(senderId);
@@ -287,6 +348,22 @@ class MessageService extends BaseService {
       const recipientIds = memberIds.filter(
         (memberId) => memberId !== senderId,
       );
+      const replyToMessage = replyToMessageId
+        ? await this.messageRepository.findById(
+            Number(replyToMessageId),
+            connection,
+          )
+        : null;
+
+      if (
+        replyToMessageId &&
+        (!replyToMessage ||
+          replyToMessage.conversation_id !== conversation.conversation_id)
+      ) {
+        throw new ValidationException(
+          "Reply message must belong to the same conversation.",
+        );
+      }
 
       const messageRow = await this.createRecord(
         {
@@ -294,12 +371,18 @@ class MessageService extends BaseService {
           conversation_id: conversation.conversation_id,
           sender_id: senderId,
           receiver_id:
-            conversation.conversation_type === "direct"
+            conversation.conversation_type === "direct" && receiverId
               ? Number(receiverId)
               : null,
           content: String(content).trim(),
           message_type: messageType,
           delivery_state: "sent",
+          reply_to_message_id: replyToMessageId
+            ? Number(replyToMessageId)
+            : null,
+          forwarded_from_message_id: forwardedFromMessageId
+            ? Number(forwardedFromMessageId)
+            : null,
         },
         connection,
       );
@@ -362,12 +445,14 @@ class MessageService extends BaseService {
     imagePath,
     file = null,
     clientMessageId = null,
+    replyToMessageId = null,
   }) {
     return this.sendMessage({
       senderId,
       receiverId,
       conversationId,
       clientMessageId,
+      replyToMessageId,
       content: imagePath,
       messageType: "image",
       attachment: {
@@ -376,6 +461,32 @@ class MessageService extends BaseService {
         fileSize: file?.size,
         originalName: file?.originalname,
       },
+    });
+  }
+
+  async forwardMessage({
+    senderId,
+    sourceMessageId,
+    receiverId = null,
+    conversationId = null,
+    clientMessageId = null,
+  }) {
+    const sourceMessage = await this.getByIdOrFail(sourceMessageId, {
+      notFoundMessage: "Source message not found.",
+    });
+    await this.getConversationForUserOrFail(
+      senderId,
+      sourceMessage.conversation_id,
+    );
+
+    return this.sendMessage({
+      senderId,
+      receiverId,
+      conversationId,
+      content: sourceMessage.content,
+      messageType: sourceMessage.message_type,
+      clientMessageId,
+      forwardedFromMessageId: sourceMessage.message_id,
     });
   }
 

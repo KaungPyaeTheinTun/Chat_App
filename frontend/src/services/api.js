@@ -22,6 +22,12 @@ api.interceptors.request.use((config) => {
 });
 
 const unwrap = (response) => response.data?.data;
+const compactPayload = (payload = {}) =>
+  Object.fromEntries(
+    Object.entries(payload).filter(
+      ([, value]) => value !== undefined && value !== null && value !== "",
+    ),
+  );
 
 const inferMimeType = (asset) => {
   if (asset.mimeType?.startsWith("image/")) {
@@ -121,7 +127,13 @@ export const messagesApi = {
       await api.get(`/messages/conversation/${conversationId}`, { params }),
     ),
   send: async (payload) => unwrap(await api.post("/messages", payload)),
-  sendImage: async ({ receiverId, conversationId, asset, clientMessageId }) => {
+  sendImage: async ({
+    receiverId,
+    conversationId,
+    asset,
+    clientMessageId,
+    replyToMessageId,
+  }) => {
     const formData = buildImageFormData("image", asset, "message");
     if (receiverId) {
       formData.append("receiverId", String(receiverId));
@@ -132,8 +144,15 @@ export const messagesApi = {
     if (clientMessageId) {
       formData.append("clientMessageId", clientMessageId);
     }
+    if (replyToMessageId) {
+      formData.append("replyToMessageId", String(replyToMessageId));
+    }
     return unwrap(await api.post("/messages/image", formData));
   },
+  forward: async (messageId, payload) =>
+    unwrap(
+      await api.post(`/messages/${messageId}/forward`, compactPayload(payload)),
+    ),
   edit: async (messageId, payload) =>
     unwrap(await api.patch(`/messages/${messageId}`, payload)),
   remove: async (messageId) =>

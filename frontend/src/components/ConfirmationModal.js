@@ -51,7 +51,7 @@ export default function ConfirmationModal({
             marginBottom: Math.max(insets.bottom + 10, 24),
             borderRadius: 26,
             overflow: "hidden",
-            backgroundColor: colors.cardGlass,
+            backgroundColor: colors.card,
             shadowColor: "#000000",
             shadowOpacity: 0.2,
             shadowRadius: 30,

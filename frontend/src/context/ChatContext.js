@@ -60,6 +60,8 @@ const buildOptimisticMessage = ({
   content,
   messageType,
   clientMessageId,
+  replyToMessageId = null,
+  repliedMessage = null,
 }) => ({
   messageId: `local-${clientMessageId}`,
   clientMessageId,
@@ -70,6 +72,8 @@ const buildOptimisticMessage = ({
   messageType,
   deliveryState: "pending",
   localStatus: "pending",
+  replyToMessageId,
+  repliedMessage,
   createdAt: new Date().toISOString(),
 });
 
@@ -476,6 +480,7 @@ export const ChatProvider = ({ children }) => {
     content,
     messageType = "text",
     clientMessageId = createClientMessageId(),
+    replyToMessage = null,
   }) => {
     const optimisticConversationId = conversationId || `pending-${receiverId}`;
     const optimistic = buildOptimisticMessage({
@@ -485,6 +490,8 @@ export const ChatProvider = ({ children }) => {
       content,
       messageType,
       clientMessageId,
+      replyToMessageId: replyToMessage?.messageId,
+      repliedMessage: replyToMessage,
     });
 
     setMessagesByConversation((current) => ({
@@ -502,6 +509,7 @@ export const ChatProvider = ({ children }) => {
         content,
         messageType,
         clientMessageId,
+        replyToMessageId: replyToMessage?.messageId,
       });
       mergeIncomingMessage(response.conversationId, response.message);
 
@@ -545,6 +553,7 @@ export const ChatProvider = ({ children }) => {
       content: message.content,
       messageType: message.messageType,
       clientMessageId: message.clientMessageId,
+      replyToMessage: message.repliedMessage || null,
     });
   };
 
@@ -553,12 +562,14 @@ export const ChatProvider = ({ children }) => {
     conversationId = activeConversation?.conversationId,
     asset,
     clientMessageId = createClientMessageId(),
+    replyToMessage = null,
   }) => {
     const response = await messagesApi.sendImage({
       receiverId,
       conversationId,
       asset,
       clientMessageId,
+      replyToMessageId: replyToMessage?.messageId,
     });
     mergeIncomingMessage(response.conversationId, response.message);
 
@@ -569,6 +580,22 @@ export const ChatProvider = ({ children }) => {
         : current,
     );
 
+    return response;
+  };
+
+  const forwardMessage = async ({
+    message,
+    receiverId = null,
+    conversationId = null,
+    clientMessageId = createClientMessageId(),
+  }) => {
+    const response = await messagesApi.forward(message.messageId, {
+      receiverId,
+      conversationId,
+      clientMessageId,
+    });
+    mergeIncomingMessage(response.conversationId, response.message);
+    await refreshChatData();
     return response;
   };
 
@@ -724,6 +751,7 @@ export const ChatProvider = ({ children }) => {
       sendMessage,
       retryMessage,
       sendImageMessage,
+      forwardMessage,
       editMessage,
       deleteMessage,
       createGroupConversation,

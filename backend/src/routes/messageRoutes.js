@@ -14,8 +14,9 @@ const buildMessageRoutes = ({ messageController, authMiddleware }) => {
     [
       body("content").trim().notEmpty(),
       body("clientMessageId").optional().isString().isLength({ max: 80 }),
-      body("conversationId").optional().isInt({ min: 1 }),
-      body("receiverId").optional().isInt({ min: 1 }),
+      body("conversationId").optional({ values: "null" }).isInt({ min: 1 }),
+      body("receiverId").optional({ values: "null" }).isInt({ min: 1 }),
+      body("replyToMessageId").optional({ values: "null" }).isInt({ min: 1 }),
       body("messageType")
         .optional()
         .isIn(["text", "image", "audio", "video", "document"]),
@@ -28,11 +29,22 @@ const buildMessageRoutes = ({ messageController, authMiddleware }) => {
     uploadMessageImage.single("image"),
     [
       body("clientMessageId").optional().isString().isLength({ max: 80 }),
-      body("conversationId").optional().isInt({ min: 1 }),
-      body("receiverId").optional().isInt({ min: 1 }),
+      body("conversationId").optional({ values: "null" }).isInt({ min: 1 }),
+      body("receiverId").optional({ values: "null" }).isInt({ min: 1 }),
+      body("replyToMessageId").optional({ values: "null" }).isInt({ min: 1 }),
     ],
     requestValidator,
     messageController.sendImage,
+  );
+  router.post(
+    "/:id/forward",
+    [
+      body("clientMessageId").optional().isString().isLength({ max: 80 }),
+      body("conversationId").optional({ values: "null" }).isInt({ min: 1 }),
+      body("receiverId").optional({ values: "null" }).isInt({ min: 1 }),
+    ],
+    requestValidator,
+    messageController.forward,
   );
   router.patch(
     "/:id",
